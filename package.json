@@ -1,0 +1,20 @@
+{
+  "name": "schedules",
+  "version": "1.0.0",
+  "description": "Schedules API. Purpuse is retrieving transportation schedules from multiple sources.",
+  "main": "index.js",
+  "scripts": {
+    "test": "test"
+  },
+  "keywords": [
+    "api",
+    "nodejs",
+    "transportation",
+    "schedules"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.17.1"
+  }
+}
