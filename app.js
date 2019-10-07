@@ -48,6 +48,7 @@ let storage = GridFsStorage({
 
 // Multer configuration for single file uploads
 let upload = multer({
+    //dest: "./tmp", 
     storage: storage
 }).single('file');
 
