@@ -1,15 +1,42 @@
-
+var gtfsImportConfig ={
+    "mongoUrl": "mongodb://localhost:27017/gtfs",
+    "agencies": [
+      {
+        "agency_key": "localAgency",
+        "path": "/path/to/the/unzipped/gtfs/"
+      }
+    ],
+    "verbose": false,
+    "skipDelete": true
+};
 let express = require('express'); 
 let app = express(); 
 let bodyParser = require('body-parser');
 let mongoose = require('mongoose');
-mongoose.connect('mongodb://127.0.0.1:27017/files');
+mongoose.connect('mongodb://127.0.0.1:27017/gtfs', {useNewUrlParser: true});
+//mongoose.connect(gtfsImportConfig.mongoUrl, {useNewUrlParser: true});
 let conn = mongoose.connection;
+var schema = new mongoose.Schema({ name: 'string', size: 'string' });
+var Agencies = mongoose.model('agencies', schema);
+var CalendarDates = mongoose.model('calendardates', schema);
+var Calendar = mongoose.model('calendar', schema);
+var FareAttributes = mongoose.model('fareattributes', schema);
+var FareRules = mongoose.model('feedrules', schema);
+var FeedInfos = mongoose.model('feedinfos', schema);
+var Frequencies = mongoose.model('frequencies', schema);
+var Routes = mongoose.model('routes', schema);
+var Shapes = mongoose.model('shapes', schema);
+var StopAttributes = mongoose.model('stopattributes', schema);
+var Stops = mongoose.model('stops', schema);
+var StopTimes = mongoose.model('stoptimes', schema);
+var TimeTablePages = mongoose.model('timetablepages', schema);
+var TimeTables = mongoose.model('timetables', schema);
+var TimeTablesStopOrders = mongoose.model('timetablestoporders', schema);
+var Transfers = mongoose.model('transfers', schema);
+var Trips = mongoose.model('trips', schema);
+
 let multer = require('multer');
-let GridFsStorage = require('multer-gridfs-storage');
-let Grid = require('gridfs-stream');
-Grid.mongo = mongoose.mongo;
-let gfs = Grid(conn.db);
+const gtfs = require('gtfs');
 let port = 3000;
 
 // Setting up the root route
@@ -29,88 +56,204 @@ app.use((req, res, next) => {
 // BodyParser middleware
 app.use(bodyParser.json());
 
-// Setting up the storage element
-let storage = GridFsStorage({
-    gfs : gfs,
-
-    filename: (req, file, cb) => {
-        let date = Date.now();
-        // The way you want to store your file in database
-        cb(null, file.fieldname + '-' + date + '.'); 
+let storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+      cb(null, '/tmp')
     },
-    
-    // Additional Meta-data that you want to store
-    metadata: function(req, file, cb) {
-        cb(null, { originalname: file.originalname });
-    },
-    root: 'ctFiles' // Root collection name
+    filename: function (req, file, cb) {
+      let filename = file.originalname.split(".")[0] + '-' + Date.now() + ".zip";  
+      cb(null, filename)
+    }
 });
 
 // Multer configuration for single file uploads
-let upload = multer({
-    //dest: "./tmp", 
-    storage: storage
+let upload = multer({ 
+    storage: storage,
+    fileFilter: function (req, file, cb) {
+        if(file.originalname.endsWith('.zip')) {
+            // To accept the file pass `true`, like so:
+            cb(null, true)
+        }
+        // To reject this file pass `false`, like so:
+        cb(null, false)
+    }
 }).single('file');
 
 // Route for file upload
-app.post('/upload', (req, res) => {
-    upload(req,res, (err) => {
-        if(err){
-             res.json({error_code:1,err_desc:err});
-             return;
-        }
-        res.json({error_code:0, error_desc: null, file_uploaded: true});
-    });
-});
-
-// Downloading a single file
-app.get('/file/:filename', (req, res) => {
-    gfs.collection('ctFiles'); //set collection name to lookup into
-
-    /** First check if file exists */
-    gfs.files.find({filename: req.params.filename}).toArray(function(err, files){
-        if(!files || files.length === 0){date
-            return res.status(404).json({
-                responseCode: 1,
-                responseMessage: "error"
-            });
-        }
-        // create read stream
-        var readstream = gfs.createReadStream({
-            filename: files[0].filename,
-            root: "ctFiles"
+app.post(
+    '/gtfs', 
+    upload, 
+    (req, resp, next) => {
+        console.log(req.file.path);
+        gtfsImportConfig.agencies[0].path = req.file.path;
+        gtfs.import(gtfsImportConfig).then(() => {
+            return resp.json('Import Successful');
+        }).catch(err => {
+            return resp.json(err);
         });
-        // set the proper content type 
-        res.set('Content-Type', files[0].contentType)
-        // Return response
-        return readstream.pipe(res);
-    });
-});
+    }
+);
 
 // Route for getting all the files
-app.get('/files', (req, res) => {
-    let filesData = [];
-    let count = 0;
-    gfs.collection('ctFiles'); // set the collection to look up into
+app.delete('/gtfs/:agencyKey', (req, res) => {
+    let promises = [];
 
-    gfs.files.find({}).toArray((err, files) => {
-        // Error checking
-        if(!files || files.length === 0){
-            return res.status(404).json({
-                responseCode: 1,
-                responseMessage: "error"
-            });
-        }
-        // Loop through all the files and fetch the necessary information
-        files.forEach((file) => {
-            filesData[count++] = {
-                originalname: file.metadata.originalname,
-                filename: file.filename,
-                contentType: file.contentType
+    promises.push(
+        Agencies.deleteMany(
+            { agency_key: req.params.agencyKey }, 
+            (err) => {
+                if (err) return handleError(err);
             }
-        });
-        res.json(filesData);
-    });
+        )
+    );
+
+    promises.push(
+        CalendarDates.deleteMany(
+            { agency_key: req.params.agencyKey }, 
+            (err) => {
+                if (err) return handleError(err);
+            }
+        )
+    );
+
+    promises.push(
+        Calendar.deleteMany(
+            { agency_key: req.params.agencyKey }, 
+            (err) => {
+                if (err) return handleError(err);
+            }
+        )
+    );
+
+    promises.push(
+        FareAttributes.deleteMany(
+            { agency_key: req.params.agencyKey }, 
+            (err) => {
+                if (err) return handleError(err);
+            }
+        )
+    );
+
+    promises.push(
+        FareRules.deleteMany(
+            { agency_key: req.params.agencyKey }, 
+            (err) => {
+                if (err) return handleError(err);
+            }
+        )
+    );
+
+    promises.push(
+        FeedInfos.deleteMany(
+            { agency_key: req.params.agencyKey }, 
+            (err) => {
+                if (err) return handleError(err);
+            }
+        )
+    );
+
+    promises.push(
+        Frequencies.deleteMany(
+            { agency_key: req.params.agencyKey }, 
+            (err) => {
+                if (err) return handleError(err);
+            }
+        )
+    );
+
+    promises.push(
+        Routes.deleteMany(
+            { agency_key: req.params.agencyKey }, 
+            (err) => {
+                if (err) return handleError(err);
+            }
+        )
+    );
+
+    promises.push(
+        Shapes.deleteMany(
+            { agency_key: req.params.agencyKey }, 
+            (err) => {
+                if (err) return handleError(err);
+            }
+        )
+    );
+
+    promises.push(
+        StopAttributes.deleteMany(
+            { agency_key: req.params.agencyKey }, 
+            (err) => {
+                if (err) return handleError(err);
+            }
+        )
+    );
+
+    promises.push(
+        Stops.deleteMany(
+            { agency_key: req.params.agencyKey }, 
+            (err) => {
+                if (err) return handleError(err);
+            }
+        )
+    );
+
+    promises.push(
+        StopTimes.deleteMany(
+            { agency_key: req.params.agencyKey }, 
+            (err) => {
+                if (err) return handleError(err);
+            }
+        )
+    );
+
+    promises.push(
+        TimeTablePages.deleteMany(
+            { agency_key: req.params.agencyKey }, 
+            (err) => {
+                if (err) return handleError(err);
+            }
+        )
+    );
+
+    promises.push(
+        TimeTables.deleteMany(
+            { agency_key: req.params.agencyKey }, 
+            (err) => {
+                if (err) return handleError(err);
+            }
+        )
+    );
+
+    promises.push(
+        TimeTablesStopOrders.deleteMany(
+            { agency_key: req.params.agencyKey }, 
+            (err) => {
+                if (err) return handleError(err);
+            }
+        )
+    );
+
+    promises.push(
+        Transfers.deleteMany(
+            { agency_key: req.params.agencyKey }, 
+            (err) => {
+                if (err) return handleError(err);
+            }
+        )
+    );
+
+    promises.push(
+        Trips.deleteMany(
+            { agency_key: req.params.agencyKey }, 
+            (err) => {
+                if (err) return handleError(err);
+            }
+        )
+    );
+
+    return Promise.all(promises).then(
+        () => {return res.json("Delete Sucessfull")}
+    );
 });
 
 app.listen(port, (req, res) => {
