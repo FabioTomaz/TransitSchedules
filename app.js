@@ -10,11 +10,12 @@ var gtfsImportConfig ={
     "skipDelete": true
 };
 let express = require('express'); 
+let multer = require('multer');
 let app = express(); 
 let bodyParser = require('body-parser');
+let gtfs = require('gtfs');
 let mongoose = require('mongoose');
 mongoose.connect('mongodb://127.0.0.1:27017/gtfs', {useNewUrlParser: true});
-//mongoose.connect(gtfsImportConfig.mongoUrl, {useNewUrlParser: true});
 let conn = mongoose.connection;
 var schema = new mongoose.Schema({ name: 'string', size: 'string' });
 var Agencies = mongoose.model('agencies', schema);
@@ -35,8 +36,6 @@ var TimeTablesStopOrders = mongoose.model('timetablestoporders', schema);
 var Transfers = mongoose.model('transfers', schema);
 var Trips = mongoose.model('trips', schema);
 
-let multer = require('multer');
-const gtfs = require('gtfs');
 let port = 3000;
 
 // Setting up the root route
