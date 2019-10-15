@@ -1,5 +1,5 @@
 var gtfsImportConfig ={
-    "mongoUrl": "mongodb://localhost:27017/gtfs",
+    "mongoUrl": "mongodb://localhost:27017/gtfsshapes",
     "agencies": [
       {
         "agency_key": "localAgency",
@@ -7,16 +7,17 @@ var gtfsImportConfig ={
       }
     ],
     "verbose": false,
-    "skipDelete": true
+    "skipDelete": true,
+    "outputType": "route"
 };
+
 let express = require('express'); 
 let multer = require('multer');
 let app = express(); 
 let bodyParser = require('body-parser');
-let gtfs = require('gtfs');
 let mongoose = require('mongoose');
-mongoose.connect('mongodb://127.0.0.1:27017/gtfs', {useNewUrlParser: true});
-let conn = mongoose.connection;
+mongoose.Promise = global.Promise;
+mongoose.connect('mongodb://127.0.0.1:27017/gtfsshapes', {useNewUrlParser: true});
 var schema = new mongoose.Schema({ name: 'string', size: 'string' });
 var Agencies = mongoose.model('agencies', schema);
 var CalendarDates = mongoose.model('calendardates', schema);
@@ -35,6 +36,8 @@ var TimeTables = mongoose.model('timetables', schema);
 var TimeTablesStopOrders = mongoose.model('timetablestoporders', schema);
 var Transfers = mongoose.model('transfers', schema);
 var Trips = mongoose.model('trips', schema);
+let gtfsToGeoJSON = require('gtfs-to-geojson');
+let gtfs = require('gtfs-to-geojson/node_modules/gtfs');
 
 let port = 3000;
 
@@ -85,11 +88,11 @@ app.post(
     (req, resp, next) => {
         console.log(req.file.path);
         gtfsImportConfig.agencies[0].path = req.file.path;
-        gtfs.import(gtfsImportConfig).then(() => {
-            return resp.json('Import Successful');
-        }).catch(err => {
-            return resp.json(err);
-        });
+            gtfsToGeoJSON(gtfsImportConfig).then(() => {
+                return resp.json();
+            }).catch(err => {
+                return resp.json(err);
+            });
     }
 );
 
@@ -253,6 +256,53 @@ app.delete('/gtfs/:agencyKey', (req, res) => {
     return Promise.all(promises).then(
         () => {return res.json("Delete Sucessfull")}
     );
+});
+
+app.get("/route/:routeId", (req, res) => {
+    gtfs.getAgencies({
+        route_id: req.params.routeId
+    }).then(routes => {
+        return res.json(routes);
+    }).catch(err => {
+        return res.json(err);
+    });
+});
+
+app.get("/agency", (req, res) => {
+    gtfs.getAgencies()
+      .then(agencies => {
+        return res.json(agencies);
+    }).catch(err => {
+        return res.json(err);
+    });
+});
+
+app.get("/agency/:agencyKey", (req, res) => {
+    gtfs.getAgencies({
+        agency_key: req.params.agencyKey
+    }).then(agencies => {
+        return res.json(agencies);
+    }).catch(err => {
+        return res.json(err);
+    });
+});
+
+app.get("/stop", (req, res) => {
+    gtfs.getStops().then(stops => {
+        return res.json(stops);
+    }).catch(err => {
+        return res.json(err);
+    });
+});
+
+app.get("/stop/:stopId", (req, res) => {
+    gtfs.getStops({
+        stop_id: req.params.stopId
+    }).then(stops => {
+        return res.json(stops);
+    }).catch(err => {
+        return res.json(err);
+    });
 });
 
 app.listen(port, (req, res) => {
