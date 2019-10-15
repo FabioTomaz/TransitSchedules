@@ -1,5 +1,5 @@
 var gtfsImportConfig ={
-    "mongoUrl": "mongodb://localhost:27017/gtfsshapes",
+    "mongoUrl": "mongodb://localhost:27017/gtfs",
     "agencies": [
       {
         "agency_key": "localAgency",
@@ -17,7 +17,7 @@ let app = express();
 let bodyParser = require('body-parser');
 let mongoose = require('mongoose');
 mongoose.Promise = global.Promise;
-mongoose.connect('mongodb://127.0.0.1:27017/gtfsshapes', {useNewUrlParser: true});
+mongoose.connect('mongodb://127.0.0.1:27017/gtfs', {useNewUrlParser: true});
 var schema = new mongoose.Schema({ name: 'string', size: 'string' });
 var Agencies = mongoose.model('agencies', schema);
 var CalendarDates = mongoose.model('calendardates', schema);
@@ -36,8 +36,7 @@ var TimeTables = mongoose.model('timetables', schema);
 var TimeTablesStopOrders = mongoose.model('timetablestoporders', schema);
 var Transfers = mongoose.model('transfers', schema);
 var Trips = mongoose.model('trips', schema);
-let gtfsToGeoJSON = require('gtfs-to-geojson');
-let gtfs = require('gtfs-to-geojson/node_modules/gtfs');
+let gtfs = require('gtfs');
 
 let port = 3000;
 
@@ -88,7 +87,7 @@ app.post(
     (req, resp, next) => {
         console.log(req.file.path);
         gtfsImportConfig.agencies[0].path = req.file.path;
-            gtfsToGeoJSON(gtfsImportConfig).then(() => {
+            gtfs(gtfsImportConfig).then(() => {
                 return resp.json();
             }).catch(err => {
                 return resp.json(err);
@@ -259,7 +258,7 @@ app.delete('/gtfs/:agencyKey', (req, res) => {
 });
 
 app.get("/route/:routeId", (req, res) => {
-    gtfs.getAgencies({
+    gtfs.getRoutes({
         route_id: req.params.routeId
     }).then(routes => {
         return res.json(routes);
