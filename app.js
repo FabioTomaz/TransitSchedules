@@ -40,6 +40,8 @@ let gtfs = require('gtfs');
 
 let port = 3000;
 
+let stopConnections = {};
+
 // Setting up the root route
 app.get('/', (req, res) => {
     res.send('Welcome to the express server');
@@ -304,6 +306,24 @@ app.get("/stop/:stopId", (req, res) => {
     });
 });
 
+makeStopConnection(stopConnects, stop1, stop2) {
+
+}
+ 
 app.listen(port, (req, res) => {
+    gtfs.getStops().then((stop) => {
+        return gtfs.getStops({
+            within: {
+                lat: stop.stop_lat,
+                lon: stop_lon,
+                radius: 2
+            }
+        }).then((nearStop) => {
+            makeStopConnection(stopConnections, stop, nearStop);
+            return stop;
+        })
+    }).then((stop) => {
+        // get stops from gtfs connections
+    });
     console.log("Server started on port: " + port);
 });
