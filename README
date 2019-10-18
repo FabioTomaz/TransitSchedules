@@ -1,2 +1,14 @@
 Postman Group: https://app.getpostman.com/join-team?invite_code=66b426edf4507c610c1f708839fffe96
 Swagger Documentation: https://app.swaggerhub.com/apis-docs/FabioTomaz/TransportationSchedules/1.0.0
+
+Routing algorithm:
+-> Load all stop (node) connections at beginning 
+-> Two nodes have a connection between two nodes if they are below 2km away or if they are indeed connected through the same agency
+-> The cost between nodes is based on the time between them
+-> For near nodes we consider walk speed and distance between node coordinates as a way for getting time between those two nodes
+-> We load all this data to an in memory data structure for the later use of the djikstra algorithm 
+-> When new gtfs is added we do the same procedure for the added nodes
+-> We consider connections as two directional
+-> Whenever we need to compute paths between nodes (stops) we use djikstra algorithm to get the path
+-> After getting the path we add up the time and the fares 
+-> After getting fares, path, time we parse all of this to the json format "RouteMapping" (defined in the OpenAPI 3.0 Documentation) and return the result

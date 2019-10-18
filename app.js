@@ -37,8 +37,12 @@ var TimeTablesStopOrders = mongoose.model('timetablestoporders', schema);
 var Transfers = mongoose.model('transfers', schema);
 var Trips = mongoose.model('trips', schema);
 let gtfs = require('gtfs');
+let Graph = require('node-dijkstra');
+const DEFAULT_WALK_VELOCITY = 4.0;
 
 let port = 3000;
+
+let stopsGraph = new Graph();
 
 // Setting up the root route
 app.get('/', (req, res) => {
@@ -304,6 +308,42 @@ app.get("/stop/:stopId", (req, res) => {
     });
 });
 
+function distance(lat1, lon1, lat2, lon2, unit) {
+	if ((lat1 == lat2) && (lon1 == lon2)) {
+		return 0;
+	} else {
+		var radlat1 = Math.PI * lat1/180;
+		var radlat2 = Math.PI * lat2/180;
+		var theta = lon1-lon2;
+		var radtheta = Math.PI * theta/180;
+		var dist = Math.sin(radlat1) * Math.sin(radlat2) + Math.cos(radlat1) * Math.cos(radlat2) * Math.cos(radtheta);
+		if (dist > 1) {
+			dist = 1;
+		}
+		dist = Math.acos(dist);
+		dist = dist * 180/Math.PI;
+		dist = dist * 60 * 1.1515;
+		if (unit=="K") { dist = dist * 1.609344 }
+		if (unit=="N") { dist = dist * 0.8684 }
+		return dist;
+	}
+}
+ 
 app.listen(port, (req, res) => {
-    console.log("Server started on port: " + port);
+    gtfs.getStops().then((stop) => {
+        return gtfs.getStops({
+            within: {
+                lat: stop.stop_lat,
+                lon: stop_lon,
+                radius: 2
+            }
+        }).then((nearStop) => {
+            let timeWalkingBetweenStations = distance(stop.stop_lat, stop.stop_lon, nearStop.stop_lat, nearStop.stop_lon, "K")/DEFAULT_WALK_VELOCITY ;
+            stopsGraph.addNode(stop.stop_id, { [nearStop.stop_id]: timeWalkingBetweenStations});
+            return stop;
+        })
+    }).then((stop) => {
+        // get stops from gtfs connections
+    });
+    console.log("Transit Schedules API. Server started on port: " + port);
 });
