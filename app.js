@@ -272,7 +272,7 @@ app.get("/route/:routeId", (req, res) => {
 });
 
 app.get("/agency", (req, res) => {
-    gtfs.getAgencies()
+    gtfs.getAgencies(getQuery(req))
       .then(agencies => {
         return res.json(agencies);
     }).catch(err => {
@@ -291,7 +291,7 @@ app.get("/agency/:agencyKey", (req, res) => {
 });
 
 app.get("/stop", (req, res) => {
-    gtfs.getStops().then(stops => {
+    gtfs.getStops(getQuery(req)).then(stops => {
         return res.json(stops);
     }).catch(err => {
         return res.json(err);
@@ -307,6 +307,25 @@ app.get("/stop/:stopId", (req, res) => {
         return res.json(err);
     });
 });
+
+function getQuery(req) {
+    let lat = req.query.lat;
+    let lon = req.query.lon;
+    if((lat !== undefined && lon === undefined) || (lat === undefined && lon !== undefined)){
+        return res.status(400).send({ error: 'Both latitude and longitude must be provided!' });
+    }
+    let query = {};
+    if (lat !== undefined) {
+        query = {
+            within: {
+                lat: lat,
+                lon: lon,
+                radius: 5
+            } 
+        };
+    }
+    return query;
+}
 
 function distance(lat1, lon1, lat2, lon2, unit) {
 	if ((lat1 == lat2) && (lon1 == lon2)) {
@@ -330,7 +349,7 @@ function distance(lat1, lon1, lat2, lon2, unit) {
 }
  
 app.listen(port, (req, res) => {
-    gtfs.getStops().then((stop) => {
+    /*gtfs.getStops().then((stop) => {
         return gtfs.getStops({
             within: {
                 lat: stop.stop_lat,
@@ -338,12 +357,13 @@ app.listen(port, (req, res) => {
                 radius: 2
             }
         }).then((nearStop) => {
-            let timeWalkingBetweenStations = distance(stop.stop_lat, stop.stop_lon, nearStop.stop_lat, nearStop.stop_lon, "K")/DEFAULT_WALK_VELOCITY ;
-            stopsGraph.addNode(stop.stop_id, { [nearStop.stop_id]: timeWalkingBetweenStations});
+            let distanceBetweenStations = distance(stop.stop_lat, stop.stop_lon, nearStop.stop_lat, nearStop.stop_lon, "K");
+            stopsGraph.addNode(stop.stop_id, { [nearStop.stop_id]: distanceBetweenStations});
+            stopsGraph.addNode(nearStop.stop_id, { [stop.stop_id]: distanceBetweenStations});
             return stop;
         })
     }).then((stop) => {
         // get stops from gtfs connections
-    });
+    });*/
     console.log("Transit Schedules API. Server started on port: " + port);
 });

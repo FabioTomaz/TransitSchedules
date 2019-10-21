@@ -1,0 +1,377 @@
+openapi: 3.0.1
+info:
+  title: Transportation Schedules
+  description: Api for managing schedules from transportation services. Supports the
+    General Transit Feed Specification (GTFS) format. You can find out more about
+    GTFS at [GTFS Official Website](http://swagger.io). For this sample, you can use
+    the api key `special-key` to test the authorization     filters.
+  termsOfService: http://swagger.io/terms/
+  contact:
+    email: fmts@ua.pt
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  version: 1.0.0
+externalDocs:
+  description: Find out more about Swagger
+  url: http://swagger.io
+servers:
+- url: http://localhost:3000
+  description: SwaggerHub API Auto Mocking
+- url: https://transportation-schedules.herokuapp.com/
+- url: https://virtserver.swaggerhub.com/FabioTomaz/TransportationSchedules/1.0.0
+tags:
+- name: Routes
+  description: Routing Endpoints
+- name: Agencies
+  description: Agencies Endpoints
+- name: Stops
+  description: Stops Endpoints
+- name: GTFS
+  description: General Transportation Format Specification
+  externalDocs:
+    description: Find more about static GTFS
+    url: https://developers.google.com/transit/gtfs
+paths:
+  /gtfs/{gtfsId}:
+    delete:
+      tags:
+      - GTFS
+      summary: Deletes a gtfs
+      operationId: deleteGtfs
+      parameters:
+      - name: gtfsId
+        in: path
+        description: Gtfs id to delete
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: integer
+          format: int64
+      responses:
+        200:
+          description: Successful operation
+        400:
+          description: Invalid ID supplied
+          content: {}
+        404:
+          description: Pet not found
+          content: {}
+      x-swagger-router-controller: GTFS
+  /gtfs:
+    post:
+      tags:
+      - GTFS
+      summary: Uploud new gtfs
+      description: This can only be done by the logged in user.
+      operationId: createUser
+      requestBody:
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+        required: true
+      responses:
+        default:
+          description: successful operation
+          content: {}
+      x-swagger-router-controller: GTFS
+  /route/{routeId}:
+    get:
+      tags:
+      - Routes
+      summary: Get a specific route
+      description: Returns a single route from a routeId and a agencyKey
+      operationId: getRouteById
+      parameters:
+      - name: routeId
+        in: path
+        description: ID of the route to return
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: integer
+          format: int64
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Route'
+        400:
+          description: Invalid ID supplied
+          content: {}
+        404:
+          description: Pet not found
+          content: {}
+      x-swagger-router-controller: Routes
+  /route/{fromStopId}/{toStopId}:
+    get:
+      tags:
+      - Routes
+      summary: Route trajectory between stops
+      description: Returns a trajectory between the stop ids specified. Also returns
+        data like fares, stops in the middle etc.
+      operationId: routingBetweenStops
+      parameters:
+      - name: fromStopId
+        in: path
+        description: ID of the stop to departure from
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: integer
+          format: int64
+      - name: toStopId
+        in: path
+        description: ID of the stop to arrive to
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: integer
+          format: int64
+      - name: departureDate
+        in: query
+        description: The number of items to skip before starting to collect the result
+          set
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: integer
+          format: int64
+      - name: arrivalDate
+        in: query
+        description: The numbers of items to return
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: integer
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RouteMapping'
+                x-content-type: application/json
+        400:
+          description: Invalid stopId
+          content: {}
+        404:
+          description: No route available
+          content: {}
+      x-swagger-router-controller: Routes
+  /agency:
+    get:
+      tags:
+      - Agencies
+      summary: Get all transportation agencies
+      description: Returns all agencies stored frmo GTFS's uplouded
+      operationId: getAgencies
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Agency'
+                x-content-type: application/json
+        400:
+          description: Invalid ID supplied
+          content: {}
+        404:
+          description: Pet not found
+          content: {}
+      x-swagger-router-controller: Agencies
+  /agency/{agencyKey}:
+    get:
+      tags:
+      - Agencies
+      summary: Get a specific transportation agency
+      description: Returns a single agency from agencyKey
+      operationId: getAgencyById
+      parameters:
+      - name: agencyKey
+        in: path
+        description: ID of the route to return
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Agency'
+        400:
+          description: Invalid ID supplied
+          content: {}
+        404:
+          description: Pet not found
+          content: {}
+      x-swagger-router-controller: Agencies
+  /stop:
+    get:
+      tags:
+      - Stops
+      summary: Get all stops
+      description: Returns all stops stored from GTFS's uplouded
+      operationId: getStops
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Stop'
+                x-content-type: application/json
+        400:
+          description: Invalid ID supplied
+          content: {}
+        404:
+          description: Pet not found
+          content: {}
+      x-swagger-router-controller: Stops
+  /stop/{stopId}:
+    get:
+      tags:
+      - Stops
+      summary: Get a specific stop
+      description: Returns a single stop
+      operationId: getStopById
+      parameters:
+      - name: stopId
+        in: path
+        description: ID of the stop to return
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: integer
+          format: int64
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Stop'
+        400:
+          description: Invalid ID supplied
+          content: {}
+        404:
+          description: Stop not found
+          content: {}
+      x-swagger-router-controller: Stops
+components:
+  schemas:
+    Agency:
+      type: object
+      properties:
+        agency_key:
+          type: string
+        agency_id:
+          type: integer
+          format: int64
+        agency_name:
+          type: string
+        agency_url:
+          type: string
+        agency_timezone:
+          type: string
+        agency_lang:
+          type: string
+        agency_phone:
+          type: string
+      example:
+        agency_timezone: agency_timezone
+        agency_key: agency_key
+        agency_name: agency_name
+        agency_url: agency_url
+        agency_phone: agency_phone
+        agency_id: 0
+        agency_lang: agency_lang
+    Route:
+      type: object
+      properties:
+        agency_key:
+          type: string
+        route_id:
+          type: string
+        route_name:
+          type: boolean
+        route_type:
+          type: string
+        route_url:
+          type: string
+      example:
+        agency_key: agency_key
+        route_id: route_id
+        route_name: true
+        route_type: route_type
+        route_url: route_url
+    RouteMapping:
+      type: object
+      properties:
+        routes:
+          type: array
+          items:
+            type: object
+        departureStop:
+          type: integer
+          format: int64
+        arrivalStop:
+          type: integer
+          format: int64
+        departureTime:
+          type: string
+        arrivalTime:
+          type: string
+        fareTotal:
+          type: number
+          format: double
+      example:
+        departureTime: departureTime
+        routes:
+        - {}
+        - {}
+        arrivalStop: 6
+        departureStop: 0
+        arrivalTime: arrivalTime
+        fareTotal: 1.46581298050294517310021547018550336360931396484375
+    Stop:
+      type: object
+      properties:
+        agency_key:
+          type: string
+        stop_id:
+          type: string
+        stop_name:
+          type: boolean
+        stop_lat:
+          type: string
+        stop_lon:
+          type: string
+      example:
+        agency_key: agency_key
+        stop_lon: stop_lon
+        stop_id: stop_id
+        stop_lat: stop_lat
+        stop_name: true
