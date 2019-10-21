@@ -1,10 +1,11 @@
 {
   "name": "schedules",
   "version": "1.0.0",
-  "description": "Transportation Schedule API for retrieving transportation data from multiple sources.",
+  "description": "Api for managing schedules from transportation services. Supports the General Transit Feed Specification (GTFS) format. You can find out more about GTFS at [GTFS Official Website](http://swagger.io). For this sample, you can use the api key `special-key` to test the authorization filters.",
   "main": "app.js",
   "scripts": {
     "test": "test",
+    "prestart": "npm install",
     "start": "node app.js"
   },
   "keywords": [

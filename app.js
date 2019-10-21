@@ -36,7 +36,7 @@ var TimeTables = mongoose.model('timetables', schema);
 var TimeTablesStopOrders = mongoose.model('timetablestoporders', schema);
 var Transfers = mongoose.model('transfers', schema);
 var Trips = mongoose.model('trips', schema);
-let gtfs = require('gtfs');
+var gtfs = require('gtfs');
 let Graph = require('node-dijkstra');
 const DEFAULT_WALK_VELOCITY = 4.0;
 
