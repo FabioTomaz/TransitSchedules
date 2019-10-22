@@ -55,4 +55,4 @@ data:
       location / {
         proxy_pass http://nodejs-service:8080; #this is the service described in nodejs.yaml
       }
-  }
+    }
