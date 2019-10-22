@@ -1,5 +1,6 @@
 'use strict';
 
+let gtfs = require('gtfs');
 
 /**
  * Get all transportation agencies
@@ -9,12 +10,9 @@
  **/
 exports.getAgencies = function(query) {
   return gtfs.getAgencies(query).then(agencies => {
-    if(agencies.length == 0) {
-        return res.status(404).send([]);
-    }
-    return res.json(agencies);
+    return agencies;
   }).catch(err => {
-      return res.json(err);
+    throw err;
   });
 }
 
@@ -28,14 +26,14 @@ exports.getAgencies = function(query) {
  **/
 exports.getAgencyById = function(agencyKey) {
   return gtfs.getAgencies({
-      agency_key: req.params.agencyKey
+      agency_key: agencyKey
   }).then(agencies => {
       if(agencies.length == 0) {
-          return res.status(404).send({});
+          return -1;
       }
-      return res.json(agencies[0]);
+      return agencies[0];
   }).catch(err => {
-      return res.json(err);
+      throw err;
   });
 }
 

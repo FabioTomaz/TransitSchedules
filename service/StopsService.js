@@ -1,5 +1,6 @@
 'use strict';
 
+let gtfs = require('gtfs');
 
 /**
  * Get a specific stop
@@ -10,14 +11,14 @@
  **/
 exports.getStopById = function(stopId) {
   return gtfs.getStops({
-      stop_id: req.params.stopId
+      stop_id: stopId
   }).then(stops => {
       if(stops.length == 0) {
-          return res.status(404).send({});
+          return -1;
       }
-      return res.json(stops[0]);
+      return stops[0];
   }).catch(err => {
-      return res.json(err);
+      throw err;
   });
 }
 
@@ -28,14 +29,14 @@ exports.getStopById = function(stopId) {
  *
  * returns List
  **/
-exports.getStops = function() {
+exports.getStops = function(query) {
   return gtfs.getStops(query).then(stops => {
     if(stops.length == 0) {
-        return res.status(404).send([]);
+        return -1;
     }
-    return res.json(stops);
+    return stops;
   }).catch(err => {
-      return res.json(err);
+      throw err;
   });
 }
 
