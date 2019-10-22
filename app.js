@@ -36,9 +36,8 @@ var TimeTables = mongoose.model('timetables', schema);
 var TimeTablesStopOrders = mongoose.model('timetablestoporders', schema);
 var Transfers = mongoose.model('transfers', schema);
 var Trips = mongoose.model('trips', schema);
-var gtfs = require('gtfs');
+let gtfs = require('gtfs');
 let Graph = require('node-dijkstra');
-const DEFAULT_WALK_VELOCITY = 4.0;
 
 let port = 3000;
 
@@ -91,11 +90,11 @@ app.post(
     (req, resp, next) => {
         console.log(req.file.path);
         gtfsImportConfig.agencies[0].path = req.file.path;
-            gtfs(gtfsImportConfig).then(() => {
-                return resp.json();
-            }).catch(err => {
-                return resp.json(err);
-            });
+        gtfs.import(gtfsImportConfig).then(() => {
+            return resp.json({"status": "Import Successfull"});
+        }).catch(err => {
+            return resp.json(err);
+        });
     }
 );
 
@@ -265,15 +264,26 @@ app.get("/route/:routeId", (req, res) => {
     gtfs.getRoutes({
         route_id: req.params.routeId
     }).then(routes => {
-        return res.json(routes);
+        if(routes.length == 0) {
+            return res.status(404).send({});
+        }
+        return res.json(routes[0]);
     }).catch(err => {
         return res.json(err);
     });
 });
 
 app.get("/agency", (req, res) => {
-    gtfs.getAgencies(getQuery(req))
-      .then(agencies => {
+    let query = getQuery(req);
+    if(query == null) {
+        return res.status(400).send({ 
+            error: 'Both latitude and longitude must be provided!' 
+        });
+    }   
+    gtfs.getAgencies(query).then(agencies => {
+        if(agencies.length == 0) {
+            return res.status(404).send([]);
+        }
         return res.json(agencies);
     }).catch(err => {
         return res.json(err);
@@ -284,14 +294,26 @@ app.get("/agency/:agencyKey", (req, res) => {
     gtfs.getAgencies({
         agency_key: req.params.agencyKey
     }).then(agencies => {
-        return res.json(agencies);
+        if(agencies.length == 0) {
+            return res.status(404).send({});
+        }
+        return res.json(agencies[0]);
     }).catch(err => {
         return res.json(err);
     });
 });
 
 app.get("/stop", (req, res) => {
-    gtfs.getStops(getQuery(req)).then(stops => {
+    let query = getQuery(req);
+    if(query == null) {
+        return res.status(400).send({ 
+            error: 'Both latitude and longitude must be provided!' 
+        });
+    }
+    gtfs.getStops(query).then(stops => {
+        if(stops.length == 0) {
+            return res.status(404).send([]);
+        }
         return res.json(stops);
     }).catch(err => {
         return res.json(err);
@@ -302,7 +324,10 @@ app.get("/stop/:stopId", (req, res) => {
     gtfs.getStops({
         stop_id: req.params.stopId
     }).then(stops => {
-        return res.json(stops);
+        if(stops.length == 0) {
+            return res.status(404).send({});
+        }
+        return res.json(stops[0]);
     }).catch(err => {
         return res.json(err);
     });
@@ -310,9 +335,9 @@ app.get("/stop/:stopId", (req, res) => {
 
 function getQuery(req) {
     let lat = req.query.lat;
-    let lon = req.query.lon;
+    let lon = req.query.long;
     if((lat !== undefined && lon === undefined) || (lat === undefined && lon !== undefined)){
-        return res.status(400).send({ error: 'Both latitude and longitude must be provided!' });
+        return null;
     }
     let query = {};
     if (lat !== undefined) {
@@ -349,21 +374,34 @@ function distance(lat1, lon1, lat2, lon2, unit) {
 }
  
 app.listen(port, (req, res) => {
-    /*gtfs.getStops().then((stop) => {
-        return gtfs.getStops({
-            within: {
-                lat: stop.stop_lat,
-                lon: stop_lon,
-                radius: 2
-            }
-        }).then((nearStop) => {
-            let distanceBetweenStations = distance(stop.stop_lat, stop.stop_lon, nearStop.stop_lat, nearStop.stop_lon, "K");
-            stopsGraph.addNode(stop.stop_id, { [nearStop.stop_id]: distanceBetweenStations});
-            stopsGraph.addNode(nearStop.stop_id, { [stop.stop_id]: distanceBetweenStations});
-            return stop;
-        })
-    }).then((stop) => {
+    gtfs.getStops().then((stops) => {
+        let promises = [];
+        for(let stop of stops) {
+            promises.push(
+                gtfs.getStops({
+                    within: {
+                        lat: stop.stop_lat,
+                        lon: stop.stop_lon,
+                        radius: 3
+                    }
+                }).then((nearStops) => {
+                    nearStops = nearStops.filter((nearStop) => nearStop.stop_id != stop.stop_id);
+                    let distanceBetweenStations = 0.0;
+                    for(let nearStop of nearStops) {
+                        distanceBetweenStations = distance(stop.stop_lat, stop.stop_lon, nearStop.stop_lat, nearStop.stop_lon, "K");
+                        stopsGraph.addNode(stop.stop_id, { [nearStop.stop_id]: distanceBetweenStations});
+                    }
+                }).catch((err) => {
+                    console.log(err);
+                })
+            );
+        }
+
+        return Promise.all(promises).then(() => stops);
+    }).then((stops) => {
+        // console.log(stops);
         // get stops from gtfs connections
-    });*/
+    });
     console.log("Transit Schedules API. Server started on port: " + port);
+
 });
