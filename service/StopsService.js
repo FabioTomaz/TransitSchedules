@@ -9,20 +9,15 @@
  * returns Stop
  **/
 exports.getStopById = function(stopId) {
-  return new Promise(function(resolve, reject) {
-    var examples = {};
-    examples['application/json'] = {
-  "agency_key" : "agency_key",
-  "stop_lon" : "stop_lon",
-  "stop_id" : "stop_id",
-  "stop_lat" : "stop_lat",
-  "stop_name" : true
-};
-    if (Object.keys(examples).length > 0) {
-      resolve(examples[Object.keys(examples)[0]]);
-    } else {
-      resolve();
-    }
+  return gtfs.getStops({
+      stop_id: req.params.stopId
+  }).then(stops => {
+      if(stops.length == 0) {
+          return res.status(404).send({});
+      }
+      return res.json(stops[0]);
+  }).catch(err => {
+      return res.json(err);
   });
 }
 
@@ -34,26 +29,13 @@ exports.getStopById = function(stopId) {
  * returns List
  **/
 exports.getStops = function() {
-  return new Promise(function(resolve, reject) {
-    var examples = {};
-    examples['application/json'] = [ {
-  "agency_key" : "agency_key",
-  "stop_lon" : "stop_lon",
-  "stop_id" : "stop_id",
-  "stop_lat" : "stop_lat",
-  "stop_name" : true
-}, {
-  "agency_key" : "agency_key",
-  "stop_lon" : "stop_lon",
-  "stop_id" : "stop_id",
-  "stop_lat" : "stop_lat",
-  "stop_name" : true
-} ];
-    if (Object.keys(examples).length > 0) {
-      resolve(examples[Object.keys(examples)[0]]);
-    } else {
-      resolve();
+  return gtfs.getStops(query).then(stops => {
+    if(stops.length == 0) {
+        return res.status(404).send([]);
     }
+    return res.json(stops);
+  }).catch(err => {
+      return res.json(err);
   });
 }
 
