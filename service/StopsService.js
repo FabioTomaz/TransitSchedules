@@ -1,5 +1,6 @@
 'use strict';
 
+let gtfs = require('gtfs');
 
 /**
  * Get a specific stop
@@ -9,20 +10,15 @@
  * returns Stop
  **/
 exports.getStopById = function(stopId) {
-  return new Promise(function(resolve, reject) {
-    var examples = {};
-    examples['application/json'] = {
-  "agency_key" : "agency_key",
-  "stop_lon" : "stop_lon",
-  "stop_id" : "stop_id",
-  "stop_lat" : "stop_lat",
-  "stop_name" : true
-};
-    if (Object.keys(examples).length > 0) {
-      resolve(examples[Object.keys(examples)[0]]);
-    } else {
-      resolve();
-    }
+  return gtfs.getStops({
+      stop_id: stopId
+  }).then(stops => {
+      if(stops.length == 0) {
+          return -1;
+      }
+      return stops[0];
+  }).catch(err => {
+      throw err;
   });
 }
 
@@ -33,27 +29,14 @@ exports.getStopById = function(stopId) {
  *
  * returns List
  **/
-exports.getStops = function() {
-  return new Promise(function(resolve, reject) {
-    var examples = {};
-    examples['application/json'] = [ {
-  "agency_key" : "agency_key",
-  "stop_lon" : "stop_lon",
-  "stop_id" : "stop_id",
-  "stop_lat" : "stop_lat",
-  "stop_name" : true
-}, {
-  "agency_key" : "agency_key",
-  "stop_lon" : "stop_lon",
-  "stop_id" : "stop_id",
-  "stop_lat" : "stop_lat",
-  "stop_name" : true
-} ];
-    if (Object.keys(examples).length > 0) {
-      resolve(examples[Object.keys(examples)[0]]);
-    } else {
-      resolve();
+exports.getStops = function(query) {
+  return gtfs.getStops(query).then(stops => {
+    if(stops.length == 0) {
+        return -1;
     }
+    return stops;
+  }).catch(err => {
+      throw err;
   });
 }
 

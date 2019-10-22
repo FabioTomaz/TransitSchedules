@@ -1,5 +1,6 @@
 'use strict';
 
+let gtfs = require('gtfs');
 
 /**
  * Get a specific route
@@ -9,20 +10,15 @@
  * returns Route
  **/
 exports.getRouteById = function(routeId) {
-  return new Promise(function(resolve, reject) {
-    var examples = {};
-    examples['application/json'] = {
-  "agency_key" : "agency_key",
-  "route_id" : "route_id",
-  "route_name" : true,
-  "route_type" : "route_type",
-  "route_url" : "route_url"
-};
-    if (Object.keys(examples).length > 0) {
-      resolve(examples[Object.keys(examples)[0]]);
-    } else {
-      resolve();
-    }
+  return gtfs.getRoutes({
+    route_id: routeId
+  }).then(routes => {
+      if(routes.length == 0) {
+          return -1;
+      }
+      return routes[0];
+  }).catch(err => {
+      throw err;
   });
 }
 

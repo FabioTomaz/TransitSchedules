@@ -1,5 +1,6 @@
 'use strict';
 
+let gtfs = require('gtfs');
 
 /**
  * Get all transportation agencies
@@ -7,31 +8,11 @@
  *
  * returns List
  **/
-exports.getAgencies = function() {
-  return new Promise(function(resolve, reject) {
-    var examples = {};
-    examples['application/json'] = [ {
-  "agency_timezone" : "agency_timezone",
-  "agency_key" : "agency_key",
-  "agency_name" : "agency_name",
-  "agency_url" : "agency_url",
-  "agency_phone" : "agency_phone",
-  "agency_id" : 0,
-  "agency_lang" : "agency_lang"
-}, {
-  "agency_timezone" : "agency_timezone",
-  "agency_key" : "agency_key",
-  "agency_name" : "agency_name",
-  "agency_url" : "agency_url",
-  "agency_phone" : "agency_phone",
-  "agency_id" : 0,
-  "agency_lang" : "agency_lang"
-} ];
-    if (Object.keys(examples).length > 0) {
-      resolve(examples[Object.keys(examples)[0]]);
-    } else {
-      resolve();
-    }
+exports.getAgencies = function(query) {
+  return gtfs.getAgencies(query).then(agencies => {
+    return agencies;
+  }).catch(err => {
+    throw err;
   });
 }
 
@@ -44,22 +25,15 @@ exports.getAgencies = function() {
  * returns Agency
  **/
 exports.getAgencyById = function(agencyKey) {
-  return new Promise(function(resolve, reject) {
-    var examples = {};
-    examples['application/json'] = {
-  "agency_timezone" : "agency_timezone",
-  "agency_key" : "agency_key",
-  "agency_name" : "agency_name",
-  "agency_url" : "agency_url",
-  "agency_phone" : "agency_phone",
-  "agency_id" : 0,
-  "agency_lang" : "agency_lang"
-};
-    if (Object.keys(examples).length > 0) {
-      resolve(examples[Object.keys(examples)[0]]);
-    } else {
-      resolve();
-    }
+  return gtfs.getAgencies({
+      agency_key: agencyKey
+  }).then(agencies => {
+      if(agencies.length == 0) {
+          return -1;
+      }
+      return agencies[0];
+  }).catch(err => {
+      throw err;
   });
 }
 
