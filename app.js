@@ -333,6 +333,17 @@ app.get("/stop/:stopId", (req, res) => {
     });
 });
 
+app.get("/stoptimes/:stopId", (req, res) => {
+    // Get all stoptimes for a specific stop
+    gtfs.getStoptimes({
+        agency_key: 'localAgency',
+        stop_id: req.params.stopId
+    }).then(stoptimes => {
+        console.log(stoptimes);
+        return res.json(stoptimes);
+    });
+});
+
 function getQuery(req) {
     let lat = req.query.lat;
     let lon = req.query.long;
@@ -372,7 +383,7 @@ function distance(lat1, lon1, lat2, lon2, unit) {
 		return dist;
 	}
 }
- 
+ gtfs.getShapes()
 app.listen(port, (req, res) => {
     gtfs.getStops().then((stops) => {
         let promises = [];
