@@ -5,7 +5,7 @@ node {
         sh 'curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl'
         sh 'chmod +x ./kubectl && mv kubectl /usr/local/sbin'
         //Clone git repository
-        git url:'https://bitbucket.org/advatys/jenkins-pipeline.git'
+        git url:'https://code.ua.pt/git/transitschedules'
     }
     stage('Integration') {
     

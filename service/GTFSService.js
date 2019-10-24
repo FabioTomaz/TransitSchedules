@@ -1,5 +1,41 @@
 'use strict';
 
+let gtfs = require('gtfs');
+let mongoose = require('mongoose');
+
+mongoose.Promise = global.Promise;
+mongoose.connect('mongodb://127.0.0.1:27017/gtfs', {useNewUrlParser: true});
+var schema = new mongoose.Schema({ name: 'string', size: 'string' });
+var Agencies = mongoose.model('agencies', schema);
+var CalendarDates = mongoose.model('calendardates', schema);
+var Calendar = mongoose.model('calendar', schema);
+var FareAttributes = mongoose.model('fareattributes', schema);
+var FareRules = mongoose.model('feedrules', schema);
+var FeedInfos = mongoose.model('feedinfos', schema);
+var Frequencies = mongoose.model('frequencies', schema);
+var Routes = mongoose.model('routes', schema);
+var Shapes = mongoose.model('shapes', schema);
+var StopAttributes = mongoose.model('stopattributes', schema);
+var Stops = mongoose.model('stops', schema);
+var StopTimes = mongoose.model('stoptimes', schema);
+var TimeTablePages = mongoose.model('timetablepages', schema);
+var TimeTables = mongoose.model('timetables', schema);
+var TimeTablesStopOrders = mongoose.model('timetablestoporders', schema);
+var Transfers = mongoose.model('transfers', schema);
+var Trips = mongoose.model('trips', schema);
+
+let gtfsImportConfig ={
+    "mongoUrl": "mongodb://localhost:27017/gtfs",
+    "agencies": [
+      {
+        "agency_key": "localAgency",
+        "path": "/path/to/the/unzipped/gtfs/"
+      }
+    ],
+    "verbose": false,
+    "skipDelete": true,
+    "outputType": "route"
+};
 
 /**
  * Uploud new gtfs
@@ -8,10 +44,14 @@
  * body Object 
  * no response value expected for this operation
  **/
-exports.createUser = function(body) {
-  return new Promise(function(resolve, reject) {
-    resolve();
-  });
+exports.createGTFS = function(filePath) {
+    console.log(filePath);
+    gtfsImportConfig.agencies[0].path = filePath;
+    return gtfs.import(gtfsImportConfig).then(() => {
+        console.log("Import Successfull");
+    }).catch(err => {
+        throw err;
+    });
 }
 
 
