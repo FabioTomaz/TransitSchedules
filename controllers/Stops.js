@@ -4,32 +4,41 @@ var utils = require('../utils/writer.js');
 var Stops = require('../service/StopsService');
 
 module.exports.getStopById = function getStopById (req, res, next) {
-  var stopId = req.swagger.params['stopId'].value;
+  var stopId = req.params.stopId;
   Stops.getStopById(stopId)
-    .then(function (response) {
-      utils.writeJson(res, response);
+    .then((stop) => {
+      if(stop == -1) {
+        return res.status(404).send({});
+      }
+      return res.json(stop);
     })
-    .catch(function (response) {
-      utils.writeJson(res, response);
+    .catch((err) => {
+      return res.json(err);
     });
 };
 
 module.exports.getStops = function getStops (req, res, next) {
   Stops.getStops()
-    .then(function (response) {
-      utils.writeJson(res, response);
-    })
-    .catch(function (response) {
-      utils.writeJson(res, response);
+    .then(stops => {
+      if(stops == -1) {
+        return res.status(404).send({});
+      }
+      return res.json(stops);
+    }).catch((err) => {
+      return res.json(err);
     });
 };
 
 module.exports.getStoptimes = function getStoptimes (req, res, next) {
-  Stops.getStoptimes()
-    .then(function (response) {
-      utils.writeJson(res, response);
-    })
-    .catch(function (response) {
-      utils.writeJson(res, response);
+  let agencyKey = req.params.agencyKey;
+  let stopId = req.params.stopId;
+  Stops.getStoptimes(agencyKey, stopId)
+    .then(stoptimes => {
+      if(stoptimes == -1) {
+        return res.status(404).send({});
+      }
+      return res.json(stoptimes);
+    }).catch((err) => {
+      return res.json(err);
     });
 };

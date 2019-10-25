@@ -4,13 +4,16 @@ var utils = require('../utils/writer.js');
 var Routes = require('../service/RoutesService');
 
 module.exports.getRouteById = function getRouteById (req, res, next) {
-  var routeId = req.swagger.params['routeId'].value;
+  var routeId = req.params.routeId;
   Routes.getRouteById(routeId)
-    .then(function (response) {
-      utils.writeJson(res, response);
+    .then((route) => {
+      if(route == -1) {
+        return res.status(404).send({});
+      }
+      return res.json(route);
     })
-    .catch(function (response) {
-      utils.writeJson(res, response);
+    .catch((err) => {
+      return res.json(err);
     });
 };
 

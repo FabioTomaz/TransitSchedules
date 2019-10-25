@@ -51,7 +51,9 @@ exports.getStoptimes = function(agencyKey, stopId) {
     agency_key:  agencyKey,
     stop_id: stopId
   }).then(stoptimes => {
-    console.log(stoptimes);
+    if(stoptimes.length == 0) {
+      return -1;
+    }
     return stoptimes;
   }).catch(err => {
     throw err;

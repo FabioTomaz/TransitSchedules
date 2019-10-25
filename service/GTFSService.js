@@ -2,9 +2,6 @@
 
 let gtfs = require('gtfs');
 let mongoose = require('mongoose');
-
-mongoose.Promise = global.Promise;
-mongoose.connect('mongodb://127.0.0.1:27017/gtfs', {useNewUrlParser: true});
 var schema = new mongoose.Schema({ name: 'string', size: 'string' });
 var Agencies = mongoose.model('agencies', schema);
 var CalendarDates = mongoose.model('calendardates', schema);
