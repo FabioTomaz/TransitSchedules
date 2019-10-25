@@ -217,10 +217,8 @@ exports.deleteGtfs = function(agencyKey) {
       )
   );
 
-  return Promise.all(promises).then(() => {
-    return true;
-  }).catch((err) => {
-    return false;
-  })
+  return Promise.all(promises).catch((err) => {
+    throw err;
+  });
 }
 

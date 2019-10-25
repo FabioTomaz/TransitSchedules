@@ -23,3 +23,13 @@ module.exports.getStops = function getStops (req, res, next) {
       utils.writeJson(res, response);
     });
 };
+
+module.exports.getStoptimes = function getStoptimes (req, res, next) {
+  Stops.getStoptimes()
+    .then(function (response) {
+      utils.writeJson(res, response);
+    })
+    .catch(function (response) {
+      utils.writeJson(res, response);
+    });
+};

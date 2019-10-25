@@ -40,3 +40,20 @@ exports.getStops = function(query) {
   });
 }
 
+
+/**
+ * Return all stoptimes for a specific stop
+ *
+ * returns List
+ **/
+exports.getStoptimes = function(agencyKey, stopId) {
+  return gtfs.getStoptimes({
+    agency_key:  agencyKey,
+    stop_id: stopId
+  }).then(stoptimes => {
+    console.log(stoptimes);
+    return stoptimes;
+  }).catch(err => {
+    throw err;
+  })
+}
