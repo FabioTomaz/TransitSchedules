@@ -1,6 +1,5 @@
 'use strict';
 
-var utils = require('../utils/writer.js');
 var Stops = require('../service/StopsService');
 
 module.exports.getStopById = function getStopById (req, res, next) {

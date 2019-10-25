@@ -1,6 +1,5 @@
 'use strict';
 
-var utils = require('../utils/writer.js');
 var Agencies = require('../service/AgenciesService');
 
 module.exports.getAgencies = function getAgencies (req, res, next) {

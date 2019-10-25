@@ -1,6 +1,5 @@
 'use strict';
 
-var utils = require('../utils/writer.js');
 var Routes = require('../service/RoutesService');
 
 module.exports.getRouteById = function getRouteById (req, res, next) {
