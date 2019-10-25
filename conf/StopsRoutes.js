@@ -1,9 +1,10 @@
 var express = require('express');
 var router = express.Router();
 
-var AgenciesController = require('../controllers/Agencies')
+var StopsController = require('../controllers/Stops')
 
-router.get('/agency', AgenciesController.getAgencies)
-router.get('/agency/:agencyKey', AgenciesController.getAgencyById)
+router.get('/stop', StopsController.getStops)
+router.get('/stop/:stopId', StopsController.getStopById)
+router.get('/stoptimes/:stopId', StopsController.getStoptimes)
 
 module.exports = router;
