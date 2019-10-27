@@ -383,7 +383,7 @@ function distance(lat1, lon1, lat2, lon2, unit) {
 		return dist;
 	}
 }
- gtfs.getShapes()
+
 app.listen(port, (req, res) => {
     gtfs.getStops().then((stops) => {
         let promises = [];

@@ -1,26 +1,23 @@
 'use strict';
 
-var utils = require('../utils/writer.js');
 var GTFS = require('../service/GTFSService');
 
-module.exports.createUser = function createUser (req, res, next) {
-  var body = req.swagger.params['body'].value;
-  GTFS.createUser(body)
-    .then(function (response) {
-      utils.writeJson(res, response);
-    })
-    .catch(function (response) {
-      utils.writeJson(res, response);
+module.exports.createGtfs = function createGtfs (req, res, next) {
+  var filePath = req.file.path;
+  GTFS.createGTFS(filePath)
+    .then(() => {
+      return res.json({"status": "Import Successfull"});
+    }).catch(err => {
+      return res.json(err);
     });
 };
 
 module.exports.deleteGtfs = function deleteGtfs (req, res, next) {
-  var gtfsId = req.swagger.params['gtfsId'].value;
-  GTFS.deleteGtfs(gtfsId)
-    .then(function (response) {
-      utils.writeJson(res, response);
-    })
-    .catch(function (response) {
-      utils.writeJson(res, response);
+  var agencyKey = req.params.agencyKey;
+  GTFS.deleteGtfs(agencyKey)
+    .then(() => {
+      return res.json({"status": "Delete Successfull"});
+    }).catch(err => {
+      return res.json(err);
     });
 };

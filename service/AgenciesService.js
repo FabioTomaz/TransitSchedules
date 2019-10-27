@@ -10,6 +10,9 @@ let gtfs = require('gtfs');
  **/
 exports.getAgencies = function(query) {
   return gtfs.getAgencies(query).then(agencies => {
+    if(agencies.length == 0) {
+      return -1;
+    }
     return agencies;
   }).catch(err => {
     throw err;
