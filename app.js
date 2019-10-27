@@ -8,7 +8,6 @@ var gtfsImportConfig ={
     ],
     "verbose": false,
     "skipDelete": true,
-    "outputType": "route"
 };
 
 let express = require('express'); 
@@ -37,11 +36,33 @@ var TimeTablesStopOrders = mongoose.model('timetablestoporders', schema);
 var Transfers = mongoose.model('transfers', schema);
 var Trips = mongoose.model('trips', schema);
 let gtfs = require('gtfs');
-let Graph = require('node-dijkstra');
+let Graph = require('ngraph.graph');
+let path = require('ngraph.path');
 
 let port = 3000;
 
 let stopsGraph = new Graph();
+
+let pathFinder = path.aStar(stopsGraph, {
+    oriented: true,
+    distance: (fromNode, toNode) => {
+      // In this case we have coordinates. Lets use them as
+      // distance between two nodes:
+      let dx = fromNode.data.x - toNode.data.x;
+      let dy = fromNode.data.y - toNode.data.y;
+   
+      return Math.sqrt(dx * dx + dy * dy);
+    },
+    heuristic: (fromNode, toNode) => {
+      // this is where we "guess" distance between two nodes.
+      // In this particular case our guess is the same as our distance
+      // function:
+      let dx = fromNode.data.x - toNode.data.x;
+      let dy = fromNode.data.y - toNode.data.y;
+   
+      return Math.sqrt(dx * dx + dy * dy);
+    }
+  });
 
 // Setting up the root route
 app.get('/', (req, res) => {
@@ -90,6 +111,7 @@ app.post(
     (req, resp, next) => {
         console.log(req.file.path);
         gtfsImportConfig.agencies[0].path = req.file.path;
+        gtfsImportConfig.agencies[0].agency_key = req.file.originalname.split(".")[0];
         gtfs.import(gtfsImportConfig).then(() => {
             return resp.json({"status": "Import Successfull"});
         }).catch(err => {
@@ -388,19 +410,25 @@ app.listen(port, (req, res) => {
     gtfs.getStops().then((stops) => {
         let promises = [];
         for(let stop of stops) {
+            if(stopsGraph.getNode(stop.stop_id)==undefined) {
+                stopsGraph.addNode(stop.stop_id, {x: stop.stop_lat, y: stop.stop_lon});
+            }
             promises.push(
                 gtfs.getStops({
                     within: {
                         lat: stop.stop_lat,
                         lon: stop.stop_lon,
-                        radius: 3
+                        radius: 0.1
                     }
                 }).then((nearStops) => {
                     nearStops = nearStops.filter((nearStop) => nearStop.stop_id != stop.stop_id);
                     let distanceBetweenStations = 0.0;
                     for(let nearStop of nearStops) {
                         distanceBetweenStations = distance(stop.stop_lat, stop.stop_lon, nearStop.stop_lat, nearStop.stop_lon, "K");
-                        stopsGraph.addNode(stop.stop_id, { [nearStop.stop_id]: distanceBetweenStations});
+                        if(stopsGraph.getNode(nearStop.stop_id)==undefined) {
+                            stopsGraph.addNode(nearStop.stop_id, {x: nearStop.stop_lat, y: nearStop.stop_lon});
+                        }
+                        stopsGraph.addLink(stop.stop_id, nearStop.stop_id, { 'weight': distanceBetweenStations});
                     }
                 }).catch((err) => {
                     console.log(err);
@@ -408,7 +436,10 @@ app.listen(port, (req, res) => {
             );
         }
 
-        return Promise.all(promises).then(() => stops);
+        return Promise.all(promises).then(() => {
+            console.log(stopsGraph);
+            return stops;
+        });
     }).then((stops) => {
         // console.log(stops);
         // get stops from gtfs connections
