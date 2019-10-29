@@ -295,6 +295,14 @@ app.get("/route/:routeId", (req, res) => {
     });
 });
 
+app.get("/route/:fromStopId/:toStopId", (req, res) => {
+    let foundPath = pathFinder.find(
+        req.params.fromStopId, 
+        req.params.toStopId
+    );
+    return res.json(foundPath);
+});
+
 app.get("/agency", (req, res) => {
     let query = getQuery(req);
     if(query == null) {
@@ -421,14 +429,14 @@ app.listen(port, (req, res) => {
                         radius: 0.1
                     }
                 }).then((nearStops) => {
-                    nearStops = nearStops.filter((nearStop) => nearStop.stop_id != stop.stop_id);
                     let distanceBetweenStations = 0.0;
                     for(let nearStop of nearStops) {
-                        distanceBetweenStations = distance(stop.stop_lat, stop.stop_lon, nearStop.stop_lat, nearStop.stop_lon, "K");
-                        if(stopsGraph.getNode(nearStop.stop_id)==undefined) {
-                            stopsGraph.addNode(nearStop.stop_id, {x: nearStop.stop_lat, y: nearStop.stop_lon});
+                        if(nearStop.stop_id == stop.stop_id) {
+                            continue;
                         }
-                        stopsGraph.addLink(stop.stop_id, nearStop.stop_id, { 'weight': distanceBetweenStations});
+                        if(stopsGraph.getLink(stop.stop_id, nearStop.stop_id)==null){
+                            stopsGraph.addLink(stop.stop_id, nearStop.stop_id);
+                        }
                     }
                 }).catch((err) => {
                     console.log(err);
@@ -436,13 +444,37 @@ app.listen(port, (req, res) => {
             );
         }
 
-        return Promise.all(promises).then(() => {
-            console.log(stopsGraph);
-            return stops;
-        });
+        return Promise.all(promises);
     }).then((stops) => {
-        // console.log(stops);
-        // get stops from gtfs connections
+        return StopTimes.aggregate([
+            {
+                $sort : { 
+                    'stop_sequence': 1 
+                }
+            }, 
+            {
+                $group: {
+                    _id: "$trip_id",
+                    "records": {
+                        $push: "$$ROOT"
+                    }
+                }
+            }
+        ]).allowDiskUse(true).exec((err ,res)=> {
+            for(let tripStoptimes of res) {
+                let previousStoptime = null;
+                for(let stoptime of tripStoptimes.records) {
+                    if(previousStoptime!=null && stopsGraph.getLink(previousStoptime.stop_id, stoptime.stop_id)==null){
+                        stopsGraph.addLink(previousStoptime.stop_id, stoptime.stop_id);
+                    }
+                    previousStoptime = stoptime;
+                }
+            }
+
+            console.log("Route graph successfully created.");
+            console.log("Nodes: " + stopsGraph.getNodesCount());
+            console.log("Links: " + stopsGraph.getLinksCount());
+        });
     });
     console.log("Transit Schedules API. Server started on port: " + port);
 
