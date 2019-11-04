@@ -38,29 +38,26 @@ var Trips = mongoose.model('trips', schema);
 let gtfs = require('gtfs');
 let Graph = require('ngraph.graph');
 let path = require('ngraph.path');
+let googleMapsClient = require('@google/maps').createClient({
+    key: 'AIzaSyBUCpE_kEKGhSUmdXkRMf2Mn6_ydXpiMz0'
+});
 
-let port = 3000;
+var port = 3000;
 
-let stopsGraph = new Graph();
+var stopsGraph = new Graph();
 
-let pathFinder = path.aStar(stopsGraph, {
+var pathFinder = path.aStar(stopsGraph, {
     oriented: true,
-    distance: (fromNode, toNode) => {
-      // In this case we have coordinates. Lets use them as
-      // distance between two nodes:
-      let dx = fromNode.data.x - toNode.data.x;
-      let dy = fromNode.data.y - toNode.data.y;
-   
-      return Math.sqrt(dx * dx + dy * dy);
+    distance: (fromNode, toNode, link) => {
+        // In this case we have coordinates. Lets use them as
+        // distance between two nodes:
+        return link.data.weight * distance(fromNode.data.lat, fromNode.data.lon, toNode.data.lat, toNode.data.lon);
     },
     heuristic: (fromNode, toNode) => {
-      // this is where we "guess" distance between two nodes.
-      // In this particular case our guess is the same as our distance
-      // function:
-      let dx = fromNode.data.x - toNode.data.x;
-      let dy = fromNode.data.y - toNode.data.y;
-   
-      return Math.sqrt(dx * dx + dy * dy);
+        // this is where we "guess" distance between two nodes.
+        // In this particular case our guess is the same as our distance
+        // function:
+        return distance(fromNode.data.lat, fromNode.data.lon, toNode.data.lat, toNode.data.lon);
     }
   });
 
@@ -296,11 +293,32 @@ app.get("/route/:routeId", (req, res) => {
 });
 
 app.get("/route/:fromStopId/:toStopId", (req, res) => {
-    let foundPath = pathFinder.find(
-        req.params.fromStopId, 
-        req.params.toStopId
-    );
-    return res.json(foundPath);
+    let found = true;
+    let foundPath;
+    try {
+        foundPath = pathFinder.find(
+            req.params.fromStopId, 
+            req.params.toStopId
+        ).reverse();
+        for (let stop of foundPath) {
+            delete stop["links"];
+            
+        }
+    } catch {
+        return res.status(400).send({ 
+            error: 'Incorrect fromStopId or toStopId provided!' 
+        });
+    }
+    let jsonRes = {
+        routes: foundPath,
+        despartureStop: req.params.fromStopId,
+        arrivalStop: req.params.toStopId,
+        departureTime: 0,
+        arrivalTime: 0,
+        fareTotal: 0,
+        found: found,
+    };
+    return res.json(jsonRes);
 });
 
 app.get("/agency", (req, res) => {
@@ -419,7 +437,7 @@ app.listen(port, (req, res) => {
         let promises = [];
         for(let stop of stops) {
             if(stopsGraph.getNode(stop.stop_id)==undefined) {
-                stopsGraph.addNode(stop.stop_id, {x: stop.stop_lat, y: stop.stop_lon});
+                stopsGraph.addNode(stop.stop_id, {lat: stop.stop_lat, lon: stop.stop_lon});
             }
             promises.push(
                 gtfs.getStops({
@@ -429,13 +447,15 @@ app.listen(port, (req, res) => {
                         radius: 0.1
                     }
                 }).then((nearStops) => {
-                    let distanceBetweenStations = 0.0;
                     for(let nearStop of nearStops) {
                         if(nearStop.stop_id == stop.stop_id) {
                             continue;
                         }
+                        if(stopsGraph.getNode(nearStop.stop_id)==undefined) {
+                            stopsGraph.addNode(nearStop.stop_id, {lat: nearStop.stop_lat, lon: nearStop.stop_lon});
+                        }
                         if(stopsGraph.getLink(stop.stop_id, nearStop.stop_id)==null){
-                            stopsGraph.addLink(stop.stop_id, nearStop.stop_id);
+                            stopsGraph.addLink(stop.stop_id, nearStop.stop_id, {weight: 5});
                         }
                     }
                 }).catch((err) => {
@@ -465,7 +485,15 @@ app.listen(port, (req, res) => {
                 let previousStoptime = null;
                 for(let stoptime of tripStoptimes.records) {
                     if(previousStoptime!=null && stopsGraph.getLink(previousStoptime.stop_id, stoptime.stop_id)==null){
-                        stopsGraph.addLink(previousStoptime.stop_id, stoptime.stop_id);
+                        stopsGraph.addLink(
+                            previousStoptime.stop_id, 
+                            stoptime.stop_id, 
+                            {
+                                weight: 1, 
+                                arrivalTime: stoptime.arrival_time,
+                                departureTime: stoptime.departure_time
+                            }
+                        );
                     }
                     previousStoptime = stoptime;
                 }
@@ -477,5 +505,4 @@ app.listen(port, (req, res) => {
         });
     });
     console.log("Transit Schedules API. Server started on port: " + port);
-
 });
