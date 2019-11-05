@@ -1,45 +1,24 @@
-//Jenkinsfile
 node {
-    stage('Integration') {
-    
-        withKubeConfig([credentialsId: 'fabio', serverUrl: 'http://192.168.85.208']) {
-        
-            sh 'kubectl create cm nodejs-app --from-file=src/ --namespace=myapp-integration -o=yaml --dry-run > deploy/cm.yaml'
-            sh 'kubectl apply -f deploy/ --namespace=myapp-integration'
-            try{
-                //Gathering Node.js app's external IP address
-                def ip = ''
-                def count = 0
-                def countLimit = 10
-            
-                //Waiting loop for IP address provisioning
-                println("Waiting for IP address")        
-                while(ip=='' && count<countLimit) {
-                    sleep 30
-                    ip = sh script: 'kubectl get svc --namespace=myapp-integration -o jsonpath="{.items[?(@.metadata.name==\'nginx-reverseproxy-service\')].status.loadBalancer.ingress[*].ip}"', returnStdout: true
-                    ip=ip.trim()
-                    count++                                                                              
-                }
-                
-                if(ip==''){
-                    error("Not able to get the IP address. Aborting...")
-                }
-                else{
-                    //Executing tests 
-                    // sh "chmod +x tests/integration-tests.sh && ./tests/integration-tests.sh ${ip}"
-            
-                    //Cleaning the integration environment
-                    println("Cleaning integration environment...")
-                    sh 'kubectl delete -f deploy --namespace=myapp-integration'
-                    println("Integration stage finished.")   
-                }                      
-            }
-            catch(Exception e) {
-                println("Integration stage failed.")
-                println("Cleaning integration environment...")
-                sh 'kubectl delete -f deploy --namespace=myapp-integration'
-                error("Exiting...")                                     
-            }
+  try {
+    stage('Checkout') {
+      checkout scm
     }
-   }
+    stage('Environment') {
+      sh 'git --version'
+      echo "Branch: ${env.BRANCH_NAME}"
+      sh 'docker -v'
+      sh 'printenv'
+    }
+    stage('Deploy'){
+      if(env.BRANCH_NAME == 'master'){
+        sh 'docker build -t node-app --no-cache .'
+        sh 'docker tag node-app localhost:5000/node-app'
+        sh 'docker push localhost:5000/node-app'
+        sh 'docker rmi -f node-app localhost:5000/node-app'
+      }
+    }
+  }
+  catch (err) {
+    throw err
+  }
 }

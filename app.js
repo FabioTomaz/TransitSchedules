@@ -292,8 +292,25 @@ app.get("/route/:routeId", (req, res) => {
     });
 });
 
+function randomIntFromInterval(min, max) {  
+    return Math.floor(Math.random() * (max - min + 1) + min);
+}
+
+function normalizeDate(date) {
+    date = date == undefined ? date: new Date();
+    date.setFullYear(1970);
+    date.setMonth(0);
+    date.setDate(1);
+    return date.getTime();
+}
+
 app.get("/route/:fromStopId/:toStopId", (req, res) => {
     let formatedPath = [];
+    let fareTotal = 0.0;
+    let departureTime = normalizeDate(req.query.departureTime);
+    let arrivalTime = normalizeDate(req.query.arrivalTime);
+    let finalDepartureTime = 0.0;
+    let finalArrivalTime = 0.0;
     try {
         let pathPiece = [];
         let foundPath = pathFinder.find(
@@ -313,11 +330,13 @@ app.get("/route/:fromStopId/:toStopId", (req, res) => {
             delete foundPath[i]["links"];
             if (foundPath[i].link == undefined || foundPath[i].link.weight > 1) {
                 pathPiece.push(foundPath[i]);
+                let fare = randomIntFromInterval(1,8);
+                fareTotal += fare;
                 formatedPath.push(
                     {
                         path: pathPiece,
                         trip_id: 0,
-                        fare: 0.0,
+                        fare: fare,
                         departure_time: 0.0,
                         arrival_time: 0.0
                     }
@@ -336,9 +355,9 @@ app.get("/route/:fromStopId/:toStopId", (req, res) => {
         routes: formatedPath,
         despartureStop: req.params.fromStopId,
         arrivalStop: req.params.toStopId,
-        departureTime: 0,
-        arrivalTime: 0,
-        fareTotal: 0,
+        departureTime: finalDepartureTime,
+        arrivalTime: finalArrivalTime,
+        fareTotal: fareTotal,
         found: formatedPath.length>0 ? true: false,
     };
     return res.json(jsonRes);
