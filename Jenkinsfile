@@ -10,8 +10,8 @@ node {
       sh 'printenv'
     }
     stage('Deploy'){
-        sh 'docker-compose down'
-        sh 'docker-compose up --build'
+        sh 'sudo docker-compose down'
+        sh 'sudo docker-compose up --build'
     }
   }
   catch (err) {
