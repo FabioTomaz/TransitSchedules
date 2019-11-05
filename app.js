@@ -1,5 +1,5 @@
 var gtfsImportConfig ={
-    "mongoUrl": "mongodb://localhost:27017/gtfs",
+    "mongoUrl": "mongodb://mongo:27017/gtfs",
     "agencies": [
       {
         "agency_key": "localAgency",
@@ -16,7 +16,10 @@ let app = express();
 let bodyParser = require('body-parser');
 let mongoose = require('mongoose');
 mongoose.Promise = global.Promise;
-mongoose.connect('mongodb://127.0.0.1:27017/gtfs', {useNewUrlParser: true});
+mongoose.connect(
+    'mongodb://mongo:27017/gtfs', 
+    {useNewUrlParser: true}
+);
 var schema = new mongoose.Schema({ name: 'string', size: 'string' });
 var Agencies = mongoose.model('agencies', schema);
 var CalendarDates = mongoose.model('calendardates', schema);
@@ -330,7 +333,7 @@ app.get("/route/:fromStopId/:toStopId", (req, res) => {
             delete foundPath[i]["links"];
             if (foundPath[i].link == undefined || foundPath[i].link.weight > 1) {
                 pathPiece.push(foundPath[i]);
-                let fare = randomIntFromInterval(1,8);
+                let fare = 3; //randomIntFromInterval(1,8);
                 fareTotal += fare;
                 formatedPath.push(
                     {
@@ -346,7 +349,7 @@ app.get("/route/:fromStopId/:toStopId", (req, res) => {
                 pathPiece.push(foundPath[i]);
             }
         }
-    } catch {
+    } catch(ex) {
         return res.status(400).send({ 
             error: 'Incorrect fromStopId or toStopId provided!' 
         });
