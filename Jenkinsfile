@@ -11,7 +11,7 @@ node {
     }
     stage('Deploy'){
         sh 'sudo docker-compose down'
-        sh 'sudo docker-compose up --build'
+        sh 'sudo docker-compose up --build -d'
     }
   }
   catch (err) {
