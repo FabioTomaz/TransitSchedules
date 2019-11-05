@@ -293,16 +293,39 @@ app.get("/route/:routeId", (req, res) => {
 });
 
 app.get("/route/:fromStopId/:toStopId", (req, res) => {
-    let found = true;
-    let foundPath;
+    let formatedPath = [];
     try {
-        foundPath = pathFinder.find(
+        let pathPiece = [];
+        let foundPath = pathFinder.find(
             req.params.fromStopId, 
             req.params.toStopId
         ).reverse();
-        for (let stop of foundPath) {
-            delete stop["links"];
-            
+        for (let i=0; i<foundPath.length; i++) {
+            if(i<foundPath.length-1) {
+                let nextStop = foundPath[i+1];
+                for (let link of foundPath[i].links) {
+                    if(link.toId == nextStop.id){
+                        foundPath[i]["link"] = link;
+                        break;
+                    }
+                }
+            }
+            delete foundPath[i]["links"];
+            if (foundPath[i].link == undefined || foundPath[i].link.weight > 1) {
+                pathPiece.push(foundPath[i]);
+                formatedPath.push(
+                    {
+                        path: pathPiece,
+                        trip_id: 0,
+                        fare: 0.0,
+                        departure_time: 0.0,
+                        arrival_time: 0.0
+                    }
+                );
+                pathPiece = [];
+            } else {
+                pathPiece.push(foundPath[i]);
+            }
         }
     } catch {
         return res.status(400).send({ 
@@ -310,13 +333,13 @@ app.get("/route/:fromStopId/:toStopId", (req, res) => {
         });
     }
     let jsonRes = {
-        routes: foundPath,
+        routes: formatedPath,
         despartureStop: req.params.fromStopId,
         arrivalStop: req.params.toStopId,
         departureTime: 0,
         arrivalTime: 0,
         fareTotal: 0,
-        found: found,
+        found: formatedPath.length>0 ? true: false,
     };
     return res.json(jsonRes);
 });
@@ -432,6 +455,43 @@ function distance(lat1, lon1, lat2, lon2, unit) {
 	}
 }
 
+/*
+
+db.getCollection("stoptimes").aggregate([
+    {
+        $match:
+            {
+                'stop_id': '11031005',
+            }
+    },
+    {
+        $addFields: {
+            convertedDate: {
+                $toDate: {
+                    $multiply: [
+                        "$arrival_timestamp",
+                        1000
+                    ]
+                }
+            }
+        }
+    },
+    {
+        $match:
+            {
+                'convertedDate': {$gte: ISODate("1970-01-01T08:28:30.000+0000")},
+            }
+    },
+    {
+        $sort: { "convertedDate": 1 }
+    }
+],
+    {
+        allowDiskUse: true
+    }
+).next()
+*/
+
 app.listen(port, (req, res) => {
     gtfs.getStops().then((stops) => {
         let promises = [];
@@ -490,8 +550,7 @@ app.listen(port, (req, res) => {
                             stoptime.stop_id, 
                             {
                                 weight: 1, 
-                                arrivalTime: stoptime.arrival_time,
-                                departureTime: stoptime.departure_time
+                                tripId: stoptime.trip_id,
                             }
                         );
                     }
