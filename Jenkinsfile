@@ -10,12 +10,8 @@ node {
       sh 'printenv'
     }
     stage('Deploy'){
-      if(env.BRANCH_NAME == 'master'){
-        sh 'docker build -t node-app --no-cache .'
-        sh 'docker tag node-app localhost:5000/node-app'
-        sh 'docker push localhost:5000/node-app'
-        sh 'docker rmi -f node-app localhost:5000/node-app'
-      }
+        sh 'docker-compose down'
+        sh 'docker-compose up --build'
     }
   }
   catch (err) {
