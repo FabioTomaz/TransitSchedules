@@ -477,43 +477,6 @@ function distance(lat1, lon1, lat2, lon2, unit) {
 	}
 }
 
-/*
-
-db.getCollection("stoptimes").aggregate([
-    {
-        $match:
-            {
-                'stop_id': '11031005',
-            }
-    },
-    {
-        $addFields: {
-            convertedDate: {
-                $toDate: {
-                    $multiply: [
-                        "$arrival_timestamp",
-                        1000
-                    ]
-                }
-            }
-        }
-    },
-    {
-        $match:
-            {
-                'convertedDate': {$gte: ISODate("1970-01-01T08:28:30.000+0000")},
-            }
-    },
-    {
-        $sort: { "convertedDate": 1 }
-    }
-],
-    {
-        allowDiskUse: true
-    }
-).next()
-*/
-
 app.listen(port, (req, res) => {
     gtfs.getStops().then((stops) => {
         let promises = [];
