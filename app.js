@@ -309,6 +309,8 @@ function normalizeDate(date, hourRange) {
     return [date, dateRange];
 }
 
+function 
+
 app.get("/route/:fromStopId/:toStopId", (req, res) => {
     let formatedPath = [];
     let fareTotal = 0.0;
@@ -362,12 +364,13 @@ app.get("/route/:fromStopId/:toStopId", (req, res) => {
         });
     }
 
+    let proms = [];
     for(let path of formatedPath) {
         let stops = [];
         for(let stop of path) {
             stops.push(stop.id);
         }
-        StopTimes.aggregate([
+        proms.push(StopTimes.aggregate([
             {
                 $match:
                     {
@@ -396,32 +399,51 @@ app.get("/route/:fromStopId/:toStopId", (req, res) => {
                 $sort: { "convertedDate": 1 }
             }
         ]).allowDiskUse(true).exec((err ,res)=> {
-            for(stoptime in res) {
-                let trip = stoptime.trip_id;
-                let stopSequence = stoptime.stop_sequence;
-                StopTimes.find({"trip_id": trip, "stop_sequence": {$gte: stopSequence}}, 'stop_id')
-                         .sort('stop_sequence')
-                         .exec(function (err, stoptimesStops) {
-                            if(stops == stoptimesStops) {
-                                // found!!!
-                            }
-                         });
-            }
-            // not found!!!
-        });
+            let stoptimeSequence = await nextStoptimeSequenceMatch(res);
+            return stoptimeSequence;
+        }));
     }
 
-    let jsonRes = {
-        routes: formatedPath,
-        despartureStop: req.params.fromStopId,
-        arrivalStop: req.params.toStopId,
-        departureTime: finalDepartureTime,
-        arrivalTime: finalArrivalTime,
-        fareTotal: fareTotal,
-        found: formatedPath.length>0 ? true: false,
-    };
-    return res.json(jsonRes);
+    return Promise.all(proms).then(
+        (stoptimeSequences) => {
+            return res.json(
+                {
+                    routes: formatedPath,
+                    despartureStop: req.params.fromStopId,
+                    arrivalStop: req.params.toStopId,
+                    departureTime: finalDepartureTime,
+                    arrivalTime: finalArrivalTime,
+                    fareTotal: fareTotal,
+                    found: formatedPath.length>0 ? true: false,
+                }
+            )
+        }
+    );
 });
+
+async function nextStoptimeSequenceMatch(res) {
+    for(stoptime in res) {
+        let trip = stoptime.trip_id;
+        let stopSequence = stoptime.stop_sequence;
+        
+        let stoptimes = await StopTimes.find(
+            {"trip_id": trip, "stop_sequence": {$gte: stopSequence}}
+        ).sort('stop_sequence').exec((err, stoptimesStops) => {
+            if(stops == stoptimesStops) {
+                // match!!!
+                return stoptimesStops;
+            } else {
+                // not a match!!!
+                return null;
+            }
+        });
+
+        if(stoptimes!=null) {
+            return stoptimes;
+        }
+    }
+    return null;
+}
 
 app.get("/agency", (req, res) => {
     let query = getQuery(req);
