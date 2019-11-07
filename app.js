@@ -299,19 +299,26 @@ function randomIntFromInterval(min, max) {
     return Math.floor(Math.random() * (max - min + 1) + min);
 }
 
-function normalizeDate(date) {
+function normalizeDate(date, hourRange) {
     date = date == undefined ? date: new Date();
     date.setFullYear(1970);
     date.setMonth(0);
     date.setDate(1);
-    return date.getTime();
+    let dateRange = date;
+    dateRange.setTime(date.getTime() + (hourRange*60*60*1000));
+    return [date, dateRange];
 }
 
 app.get("/route/:fromStopId/:toStopId", (req, res) => {
     let formatedPath = [];
     let fareTotal = 0.0;
-    let departureTime = normalizeDate(req.query.departureTime);
-    let arrivalTime = normalizeDate(req.query.arrivalTime);
+    if(req.query.departureTime != undefined && req.query.arrivalTime != undefined){
+        return res.status(400).send({ 
+            error: 'Provide departure time xor arrival time!' 
+        });
+    }
+    let departureTimeRange = normalizeDate(req.query.departureTime, 1);
+    let arrivalTimeRange = normalizeDate(req.query.arrivalTime, -1);
     let finalDepartureTime = 0.0;
     let finalArrivalTime = 0.0;
     try {
@@ -354,6 +361,56 @@ app.get("/route/:fromStopId/:toStopId", (req, res) => {
             error: 'Incorrect fromStopId or toStopId provided!' 
         });
     }
+
+    for(let path of formatedPath) {
+        let stops = [];
+        for(let stop of path) {
+            stops.push(stop.id);
+        }
+        StopTimes.aggregate([
+            {
+                $match:
+                    {
+                        'stop_id': stops[0],
+                    }
+            },
+            {
+                $addFields: {
+                    convertedDate: {
+                        $toDate: {
+                            $multiply: [
+                                "$arrival_timestamp",
+                                1000
+                            ]
+                        }
+                    }
+                }
+            },
+            {
+                $match:
+                    {
+                        'convertedDate': {$gte: departureTimeRange[0], $lte: departureTimeRange[1]},
+                    }
+            },
+            {
+                $sort: { "convertedDate": 1 }
+            }
+        ]).allowDiskUse(true).exec((err ,res)=> {
+            for(stoptime in res) {
+                let trip = stoptime.trip_id;
+                let stopSequence = stoptime.stop_sequence;
+                StopTimes.find({"trip_id": trip, "stop_sequence": {$gte: stopSequence}}, 'stop_id')
+                         .sort('stop_sequence')
+                         .exec(function (err, stoptimesStops) {
+                            if(stops == stoptimesStops) {
+                                // found!!!
+                            }
+                         });
+            }
+            // not found!!!
+        });
+    }
+
     let jsonRes = {
         routes: formatedPath,
         despartureStop: req.params.fromStopId,
