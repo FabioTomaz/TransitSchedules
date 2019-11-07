@@ -307,9 +307,7 @@ function normalizeDate(date, hourRange) {
     let dateRange = date;
     dateRange.setTime(date.getTime() + (hourRange*60*60*1000));
     return [date, dateRange];
-}
-
-function 
+} 
 
 app.get("/route/:fromStopId/:toStopId", (req, res) => {
     let formatedPath = [];
@@ -399,13 +397,19 @@ app.get("/route/:fromStopId/:toStopId", (req, res) => {
                 $sort: { "convertedDate": 1 }
             }
         ]).allowDiskUse(true).exec((err ,res)=> {
-            let stoptimeSequence = await nextStoptimeSequenceMatch(res);
-            return stoptimeSequence;
+            return nextStoptimeSequenceMatch(res, stops);
         }));
     }
 
     return Promise.all(proms).then(
         (stoptimeSequences) => {
+            for(let i=0; i<formatedPath.length; i++) {
+                if(stoptimeSequences[i]!=null){
+                    for(let j=0; j<path.length; j++){
+                        formatedPath[i][j]["stoptime"] = stoptimeSequences[i][j]; 
+                    }
+                }
+            }
             return res.json(
                 {
                     routes: formatedPath,
@@ -421,7 +425,7 @@ app.get("/route/:fromStopId/:toStopId", (req, res) => {
     );
 });
 
-async function nextStoptimeSequenceMatch(res) {
+async function nextStoptimeSequenceMatch(res, stops) {
     for(stoptime in res) {
         let trip = stoptime.trip_id;
         let stopSequence = stoptime.stop_sequence;
