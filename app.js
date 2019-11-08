@@ -301,6 +301,7 @@ function randomIntFromInterval(min, max) {
 
 function normalizeDate(date, hourRange) {
     date = date == undefined ? date: new Date();
+    hourRange = hourRange == undefined? hourRange: 1;
     date.setFullYear(1970);
     date.setMonth(0);
     date.setDate(1);
@@ -317,8 +318,8 @@ app.get("/route/:fromStopId/:toStopId", (req, res) => {
             error: 'Provide departure time xor arrival time!' 
         });
     }
-    let departureTimeRange = normalizeDate(req.query.departureTime, 1);
-    let arrivalTimeRange = normalizeDate(req.query.arrivalTime, -1);
+    let departureTimeRange = normalizeDate(req.query.departureTime, req.query.timeVariance);
+    let arrivalTimeRange = normalizeDate(req.query.arrivalTime, timeVariance);
     let finalDepartureTime = 0.0;
     let finalArrivalTime = 0.0;
     try {
@@ -425,21 +426,25 @@ app.get("/route/:fromStopId/:toStopId", (req, res) => {
     );
 });
 
-async function nextStoptimeSequenceMatch(res, stops) {
+async function nextStoptimeSequenceMatch(res, stops, reverse) {
     for(stoptime in res) {
         let trip = stoptime.trip_id;
         let stopSequence = stoptime.stop_sequence;
+        let stopSequenceQuery = reverse ? {$lte: stopSequence} : {$gte: stopSequence};
+        stops = reverse ? stops.reverse() : stops; 
         
         let stoptimes = await StopTimes.find(
-            {"trip_id": trip, "stop_sequence": {$gte: stopSequence}}
-        ).sort('stop_sequence').exec((err, stoptimesStops) => {
-            if(stops == stoptimesStops) {
-                // match!!!
-                return stoptimesStops;
-            } else {
-                // not a match!!!
-                return null;
+            {"trip_id": trip, "stop_sequence": stopSequenceQuery}
+        ).sort([['stop_sequence', reverse ? -1: 1]]).exec((err, stoptimesSequence) => {
+            let i;
+            for(i=0; i<stops.length; i++){
+                if(stops[i]!=stoptimesSequence[i].stop_id){
+                    // not a match!!!
+                    return null;
+                }
             }
+            // match!!!
+            return stoptimesSequence.slice[0, i+1];
         });
 
         if(stoptimes!=null) {
