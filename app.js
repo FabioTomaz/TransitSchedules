@@ -307,7 +307,11 @@ function normalizeDate(date, hourRange) {
     date.setDate(1);
     let dateRange = date;
     dateRange.setTime(date.getTime() + (hourRange*60*60*1000));
-    return [date, dateRange];
+    if(date.getTime() <= dateRange.getTime()) {
+        return [date, dateRange];
+    } else {
+        return [dateRange, date];
+    }
 } 
 
 app.get("/route/:fromStopId/:toStopId", (req, res) => {
@@ -316,6 +320,12 @@ app.get("/route/:fromStopId/:toStopId", (req, res) => {
     if(req.query.departureTime != undefined && req.query.arrivalTime != undefined){
         return res.status(400).send({ 
             error: 'Provide departure time xor arrival time!' 
+        });
+    }
+
+    if(req.query.timeVariance != undefined && (req.query.timeVariance > 5 || req.query.timeVariance < -5)){
+        return res.status(400).send({ 
+            error: 'Time variance should be no bigger than 5 hours and no less than minus 5 hours' 
         });
     }
 
