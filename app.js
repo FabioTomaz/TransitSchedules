@@ -318,8 +318,14 @@ app.get("/route/:fromStopId/:toStopId", (req, res) => {
             error: 'Provide departure time xor arrival time!' 
         });
     }
-    let departureTimeRange = normalizeDate(req.query.departureTime, req.query.timeVariance);
-    let arrivalTimeRange = normalizeDate(req.query.arrivalTime, timeVariance);
+
+    let timeRange;
+    if(req.query.arrivalTime != undefined) {
+        timeRange = normalizeDate(req.query.departureTime, req.query.timeVariance);
+    } else {
+        timeRange = normalizeDate(req.query.arrivalTime, timeVariance);
+    }
+
     let finalDepartureTime = 0.0;
     let finalArrivalTime = 0.0;
     try {
@@ -391,7 +397,7 @@ app.get("/route/:fromStopId/:toStopId", (req, res) => {
             {
                 $match:
                     {
-                        'convertedDate': {$gte: departureTimeRange[0], $lte: departureTimeRange[1]},
+                        'convertedDate': {$gte: timeRange[0], $lte: timeRange[1]},
                     }
             },
             {
@@ -405,8 +411,15 @@ app.get("/route/:fromStopId/:toStopId", (req, res) => {
     return Promise.all(proms).then(
         (stoptimeSequences) => {
             for(let i=0; i<formatedPath.length; i++) {
-                if(stoptimeSequences[i]!=null){
+                let stoptimeSequence = stoptimeSequences[i];
+                if(stoptimeSequence!=null){
                     for(let j=0; j<path.length; j++){
+                        if(j==0){
+                            formatedPath[i]["departure_time"] = stoptimeSequence[j].departureTime;
+                            formatedPath[i]["trip_id"] = stoptimeSequence[j].trip_id;
+                        } else if (j==path.length-1) {
+                            formatedPath[i]["arrival_time"] = stoptimeSequence[j].arrival_time;
+                        }
                         formatedPath[i][j]["stoptime"] = stoptimeSequences[i][j]; 
                     }
                 }
@@ -427,7 +440,7 @@ app.get("/route/:fromStopId/:toStopId", (req, res) => {
 });
 
 async function nextStoptimeSequenceMatch(res, stops, reverse) {
-    for(stoptime in res) {
+    for(let stoptime of res) {
         let trip = stoptime.trip_id;
         let stopSequence = stoptime.stop_sequence;
         let stopSequenceQuery = reverse ? {$lte: stopSequence} : {$gte: stopSequence};
