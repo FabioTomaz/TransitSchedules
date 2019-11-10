@@ -300,12 +300,12 @@ function randomIntFromInterval(min, max) {
 }
 
 function normalizeDate(date, hourRange) {
-    date = date == undefined ? date: new Date();
-    hourRange = hourRange == undefined? hourRange: 1;
+    date = date == undefined ? new Date(): date;
+    hourRange = hourRange == undefined? 1: hourRange;
     date.setFullYear(1970);
     date.setMonth(0);
     date.setDate(1);
-    let dateRange = date;
+    let dateRange = new Date(date.getTime());
     dateRange.setTime(date.getTime() + (hourRange*60*60*1000));
     if(date.getTime() <= dateRange.getTime()) {
         return [date, dateRange];
@@ -333,7 +333,7 @@ app.get("/route/:fromStopId/:toStopId", (req, res) => {
     if(req.query.arrivalTime != undefined) {
         timeRange = normalizeDate(req.query.departureTime, req.query.timeVariance);
     } else {
-        timeRange = normalizeDate(req.query.arrivalTime, timeVariance);
+        timeRange = normalizeDate(req.query.arrivalTime, req.query.timeVariance);
     }
 
     let finalDepartureTime = 0.0;
@@ -380,9 +380,9 @@ app.get("/route/:fromStopId/:toStopId", (req, res) => {
     }
 
     let proms = [];
-    for(let path of formatedPath) {
+    for(let pathPiece of formatedPath) {
         let stops = [];
-        for(let stop of path) {
+        for(let stop of pathPiece.path) {
             stops.push(stop.id);
         }
         proms.push(StopTimes.aggregate([
@@ -423,11 +423,11 @@ app.get("/route/:fromStopId/:toStopId", (req, res) => {
             for(let i=0; i<formatedPath.length; i++) {
                 let stoptimeSequence = stoptimeSequences[i];
                 if(stoptimeSequence!=null){
-                    for(let j=0; j<path.length; j++){
+                    for(let j=0; j<pathPiece.path.length; j++){
                         if(j==0){
                             formatedPath[i]["departure_time"] = stoptimeSequence[j].departureTime;
                             formatedPath[i]["trip_id"] = stoptimeSequence[j].trip_id;
-                        } else if (j==path.length-1) {
+                        } else if (j==pathPiece.path.length-1) {
                             formatedPath[i]["arrival_time"] = stoptimeSequence[j].arrival_time;
                         }
                         formatedPath[i][j]["stoptime"] = stoptimeSequences[i][j]; 
