@@ -15,7 +15,7 @@ let multer = require('multer');
 let app = express(); 
 let bodyParser = require('body-parser');
 let mongoose = require('mongoose');
-mongoose.Promise = global.Promise;
+mongoose.Promise = Promise;
 mongoose.connect(
     'mongodb://mongo:27017/gtfs', 
     {useNewUrlParser: true}
@@ -395,11 +395,16 @@ app.get("/route/:fromStopId/:toStopId", (req, res) => {
             {
                 $addFields: {
                     convertedDate: {
-                        $toDate: {
-                            $multiply: [
-                                "$arrival_timestamp",
-                                1000
-                            ]
+                        $toDate: {            
+                            $convert: { 
+                                input: {
+                                    $multiply: [
+                                        "$arrival_timestamp",
+                                        1000
+                                    ]
+                                }, 
+                                to: "long"
+                            } 
                         }
                     }
                 }
@@ -413,7 +418,7 @@ app.get("/route/:fromStopId/:toStopId", (req, res) => {
             {
                 $sort: { "convertedDate": 1 }
             }
-        ]).allowDiskUse(true).exec((err ,res)=> {
+        ]).allowDiskUse(true).then((res)=> {
             return nextStoptimeSequenceMatch(res, stops);
         }));
     }
