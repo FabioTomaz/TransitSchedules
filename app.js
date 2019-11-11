@@ -331,9 +331,9 @@ app.get("/route/:fromStopId/:toStopId", (req, res) => {
 
     let timeRange;
     if(req.query.arrivalTime != undefined) {
-        timeRange = normalizeDate(req.query.departureTime, req.query.timeVariance);
-    } else {
         timeRange = normalizeDate(req.query.arrivalTime, req.query.timeVariance);
+    } else {
+        timeRange = normalizeDate(req.query.departureTime, req.query.timeVariance);
     }
 
     let finalDepartureTime = 0.0;
@@ -419,7 +419,7 @@ app.get("/route/:fromStopId/:toStopId", (req, res) => {
                 $sort: { "convertedDate": 1 }
             }
         ]).allowDiskUse(true).then((res)=> {
-            return nextStoptimeSequenceMatch(res, stops);
+            return nextStoptimeSequenceMatch(res, stops, req.query.arrivalTime != undefined);
         }));
     }
 
@@ -427,15 +427,16 @@ app.get("/route/:fromStopId/:toStopId", (req, res) => {
         (stoptimeSequences) => {
             for(let i=0; i<formatedPath.length; i++) {
                 let stoptimeSequence = stoptimeSequences[i];
+                let pathPiece = formatedPath[i];
                 if(stoptimeSequence!=null){
                     for(let j=0; j<pathPiece.path.length; j++){
                         if(j==0){
-                            formatedPath[i]["departure_time"] = stoptimeSequence[j].departureTime;
+                            formatedPath[i]["departure_time"] = stoptimeSequence[j].departure_time;
                             formatedPath[i]["trip_id"] = stoptimeSequence[j].trip_id;
                         } else if (j==pathPiece.path.length-1) {
                             formatedPath[i]["arrival_time"] = stoptimeSequence[j].arrival_time;
                         }
-                        formatedPath[i][j]["stoptime"] = stoptimeSequences[i][j]; 
+                        formatedPath[i].path[j]["stoptime"] = stoptimeSequences[i][j]; 
                     }
                 }
             }
@@ -455,31 +456,41 @@ app.get("/route/:fromStopId/:toStopId", (req, res) => {
 });
 
 async function nextStoptimeSequenceMatch(res, stops, reverse) {
+    let promises = [];
+
     for(let stoptime of res) {
         let trip = stoptime.trip_id;
         let stopSequence = stoptime.stop_sequence;
         let stopSequenceQuery = reverse ? {$lte: stopSequence} : {$gte: stopSequence};
         stops = reverse ? stops.reverse() : stops; 
         
-        let stoptimes = await StopTimes.find(
-            {"trip_id": trip, "stop_sequence": stopSequenceQuery}
-        ).sort([['stop_sequence', reverse ? -1: 1]]).exec((err, stoptimesSequence) => {
-            let i;
-            for(i=0; i<stops.length; i++){
-                if(stops[i]!=stoptimesSequence[i].stop_id){
-                    // not a match!!!
-                    return null;
+        promises.push(
+            StopTimes.find(
+                {"trip_id": trip, "stop_sequence": stopSequenceQuery},
+                null,
+                {sort: {stop_sequence: reverse ? -1: 1}}
+            ).then((stoptimesSequence) => {
+                let i;
+                for(i=0; i<stops.length; i++){
+                    if(stops[i]!=stoptimesSequence[i]._doc.stop_id){
+                        // not a match!!!
+                        return null;
+                    }
                 }
-            }
-            // match!!!
-            return stoptimesSequence.slice[0, i+1];
-        });
-
-        if(stoptimes!=null) {
-            return stoptimes;
-        }
+                // match!!!
+                return stoptimesSequence.slice(0, i).map(a => a._doc);
+            })
+        );
     }
-    return null;
+    
+    return Promise.all(promises).then((stoptimesSequences) => {
+        for (let stoptimesSequence of stoptimesSequences) {
+            if(stoptimesSequence != null) {
+                return stoptimesSequence;
+            }
+        }
+        return null;
+    });
 }
 
 app.get("/agency", (req, res) => {
