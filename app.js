@@ -343,7 +343,8 @@ app.get("/route/:fromStopId/:toStopId", (req, res) => {
         let foundPath = pathFinder.find(
             req.params.fromStopId, 
             req.params.toStopId
-        ).reverse();
+        );
+        foundPath = foundPath.reverse()
         for (let i=0; i<foundPath.length; i++) {
             if(i<foundPath.length-1) {
                 let nextStop = foundPath[i+1];
@@ -354,7 +355,7 @@ app.get("/route/:fromStopId/:toStopId", (req, res) => {
                     }
                 }
             }
-            delete foundPath[i]["links"];
+            //delete foundPath[i]["links"];
             if (foundPath[i].link == undefined || foundPath[i].link.weight > 1) {
                 pathPiece.push(foundPath[i]);
                 let fare = 3; //randomIntFromInterval(1,8);
