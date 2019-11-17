@@ -432,10 +432,16 @@ app.get("/route/:fromStopId/:toStopId", (req, res) => {
                 if(stoptimeSequence!=null){
                     for(let j=0; j<pathPiece.path.length; j++){
                         if(j==0){
-                            formatedPath[i]["departure_time"] = stoptimeSequence[j].departure_time;
                             formatedPath[i]["trip_id"] = stoptimeSequence[j].trip_id;
+                            formatedPath[i]["departure_time"] = stoptimeSequence[j].departure_time;
+                            if(i==0){
+                                finalDepartureTime = stoptimeSequence[j].departure_time;
+                            }
                         } else if (j==pathPiece.path.length-1) {
                             formatedPath[i]["arrival_time"] = stoptimeSequence[j].arrival_time;
+                            if(i==formatedPath.length-1){
+                                finalArrivalTime = stoptimeSequence[j].arrival_time;
+                            }
                         }
                         formatedPath[i].path[j]["stoptime"] = stoptimeSequences[i][j]; 
                     }
