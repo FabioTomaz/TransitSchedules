@@ -1,24 +1,24 @@
-var gtfsImportConfig ={
+var gtfsImportConfig = {
     "mongoUrl": "mongodb://mongo:27017/gtfs",
     "agencies": [
-      {
-        "agency_key": "localAgency",
-        "path": "/path/to/the/unzipped/gtfs/"
-      }
+        {
+            "agency_key": "localAgency",
+            "path": "/path/to/the/unzipped/gtfs/"
+        }
     ],
     "verbose": false,
     "skipDelete": true,
 };
 
-let express = require('express'); 
+let express = require('express');
 let multer = require('multer');
-let app = express(); 
+let app = express();
 let bodyParser = require('body-parser');
 let mongoose = require('mongoose');
 mongoose.Promise = Promise;
 mongoose.connect(
-    'mongodb://mongo:27017/gtfs', 
-    {useNewUrlParser: true}
+    'mongodb://mongo:27017/gtfs',
+    { useNewUrlParser: true }
 );
 var schema = new mongoose.Schema({ name: 'string', size: 'string' });
 var Agencies = mongoose.model('agencies', schema);
@@ -62,7 +62,7 @@ var pathFinder = path.aStar(stopsGraph, {
         // function:
         return distance(fromNode.data.lat, fromNode.data.lon, toNode.data.lat, toNode.data.lon);
     }
-  });
+});
 
 // Setting up the root route
 app.get('/', (req, res) => {
@@ -71,7 +71,7 @@ app.get('/', (req, res) => {
 
 // Allows cross-origin domains to access this API
 app.use((req, res, next) => {
-    res.append('Access-Control-Allow-Origin' , 'http://localhost:4200');
+    res.append('Access-Control-Allow-Origin', 'http://localhost:4200');
     res.append('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE');
     res.append("Access-Control-Allow-Headers", "Origin, Accept,Access-Control-Allow-Headers, Origin,Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers");
     res.append('Access-Control-Allow-Credentials', true);
@@ -83,19 +83,19 @@ app.use(bodyParser.json());
 
 let storage = multer.diskStorage({
     destination: function (req, file, cb) {
-      cb(null, '/tmp')
+        cb(null, '/tmp')
     },
     filename: function (req, file, cb) {
-      let filename = file.originalname.split(".")[0] + '-' + Date.now() + ".zip";  
-      cb(null, filename)
+        let filename = file.originalname.split(".")[0] + '-' + Date.now() + ".zip";
+        cb(null, filename)
     }
 });
 
 // Multer configuration for single file uploads
-let upload = multer({ 
+let upload = multer({
     storage: storage,
     fileFilter: function (req, file, cb) {
-        if(file.originalname.endsWith('.zip')) {
+        if (file.originalname.endsWith('.zip')) {
             // To accept the file pass `true`, like so:
             cb(null, true)
         }
@@ -106,14 +106,14 @@ let upload = multer({
 
 // Route for file upload
 app.post(
-    '/gtfs', 
-    upload, 
+    '/gtfs',
+    upload,
     (req, resp, next) => {
         console.log(req.file.path);
         gtfsImportConfig.agencies[0].path = req.file.path;
         gtfsImportConfig.agencies[0].agency_key = req.file.originalname.split(".")[0];
         gtfs.import(gtfsImportConfig).then(() => {
-            return resp.json({"status": "Import Successfull"});
+            return resp.json({ "status": "Import Successfull" });
         }).catch(err => {
             return resp.json(err);
         });
@@ -126,7 +126,7 @@ app.delete('/gtfs/:agencyKey', (req, res) => {
 
     promises.push(
         Agencies.deleteMany(
-            { agency_key: req.params.agencyKey }, 
+            { agency_key: req.params.agencyKey },
             (err) => {
                 if (err) return handleError(err);
             }
@@ -135,7 +135,7 @@ app.delete('/gtfs/:agencyKey', (req, res) => {
 
     promises.push(
         CalendarDates.deleteMany(
-            { agency_key: req.params.agencyKey }, 
+            { agency_key: req.params.agencyKey },
             (err) => {
                 if (err) return handleError(err);
             }
@@ -144,7 +144,7 @@ app.delete('/gtfs/:agencyKey', (req, res) => {
 
     promises.push(
         Calendar.deleteMany(
-            { agency_key: req.params.agencyKey }, 
+            { agency_key: req.params.agencyKey },
             (err) => {
                 if (err) return handleError(err);
             }
@@ -153,7 +153,7 @@ app.delete('/gtfs/:agencyKey', (req, res) => {
 
     promises.push(
         FareAttributes.deleteMany(
-            { agency_key: req.params.agencyKey }, 
+            { agency_key: req.params.agencyKey },
             (err) => {
                 if (err) return handleError(err);
             }
@@ -162,7 +162,7 @@ app.delete('/gtfs/:agencyKey', (req, res) => {
 
     promises.push(
         FareRules.deleteMany(
-            { agency_key: req.params.agencyKey }, 
+            { agency_key: req.params.agencyKey },
             (err) => {
                 if (err) return handleError(err);
             }
@@ -171,7 +171,7 @@ app.delete('/gtfs/:agencyKey', (req, res) => {
 
     promises.push(
         FeedInfos.deleteMany(
-            { agency_key: req.params.agencyKey }, 
+            { agency_key: req.params.agencyKey },
             (err) => {
                 if (err) return handleError(err);
             }
@@ -180,7 +180,7 @@ app.delete('/gtfs/:agencyKey', (req, res) => {
 
     promises.push(
         Frequencies.deleteMany(
-            { agency_key: req.params.agencyKey }, 
+            { agency_key: req.params.agencyKey },
             (err) => {
                 if (err) return handleError(err);
             }
@@ -189,7 +189,7 @@ app.delete('/gtfs/:agencyKey', (req, res) => {
 
     promises.push(
         Routes.deleteMany(
-            { agency_key: req.params.agencyKey }, 
+            { agency_key: req.params.agencyKey },
             (err) => {
                 if (err) return handleError(err);
             }
@@ -198,7 +198,7 @@ app.delete('/gtfs/:agencyKey', (req, res) => {
 
     promises.push(
         Shapes.deleteMany(
-            { agency_key: req.params.agencyKey }, 
+            { agency_key: req.params.agencyKey },
             (err) => {
                 if (err) return handleError(err);
             }
@@ -207,7 +207,7 @@ app.delete('/gtfs/:agencyKey', (req, res) => {
 
     promises.push(
         StopAttributes.deleteMany(
-            { agency_key: req.params.agencyKey }, 
+            { agency_key: req.params.agencyKey },
             (err) => {
                 if (err) return handleError(err);
             }
@@ -216,7 +216,7 @@ app.delete('/gtfs/:agencyKey', (req, res) => {
 
     promises.push(
         Stops.deleteMany(
-            { agency_key: req.params.agencyKey }, 
+            { agency_key: req.params.agencyKey },
             (err) => {
                 if (err) return handleError(err);
             }
@@ -225,7 +225,7 @@ app.delete('/gtfs/:agencyKey', (req, res) => {
 
     promises.push(
         StopTimes.deleteMany(
-            { agency_key: req.params.agencyKey }, 
+            { agency_key: req.params.agencyKey },
             (err) => {
                 if (err) return handleError(err);
             }
@@ -234,7 +234,7 @@ app.delete('/gtfs/:agencyKey', (req, res) => {
 
     promises.push(
         TimeTablePages.deleteMany(
-            { agency_key: req.params.agencyKey }, 
+            { agency_key: req.params.agencyKey },
             (err) => {
                 if (err) return handleError(err);
             }
@@ -243,7 +243,7 @@ app.delete('/gtfs/:agencyKey', (req, res) => {
 
     promises.push(
         TimeTables.deleteMany(
-            { agency_key: req.params.agencyKey }, 
+            { agency_key: req.params.agencyKey },
             (err) => {
                 if (err) return handleError(err);
             }
@@ -252,7 +252,7 @@ app.delete('/gtfs/:agencyKey', (req, res) => {
 
     promises.push(
         TimeTablesStopOrders.deleteMany(
-            { agency_key: req.params.agencyKey }, 
+            { agency_key: req.params.agencyKey },
             (err) => {
                 if (err) return handleError(err);
             }
@@ -261,7 +261,7 @@ app.delete('/gtfs/:agencyKey', (req, res) => {
 
     promises.push(
         Transfers.deleteMany(
-            { agency_key: req.params.agencyKey }, 
+            { agency_key: req.params.agencyKey },
             (err) => {
                 if (err) return handleError(err);
             }
@@ -270,7 +270,7 @@ app.delete('/gtfs/:agencyKey', (req, res) => {
 
     promises.push(
         Trips.deleteMany(
-            { agency_key: req.params.agencyKey }, 
+            { agency_key: req.params.agencyKey },
             (err) => {
                 if (err) return handleError(err);
             }
@@ -278,7 +278,7 @@ app.delete('/gtfs/:agencyKey', (req, res) => {
     );
 
     return Promise.all(promises).then(
-        () => {return res.json("Delete Sucessfull")}
+        () => { return res.json("Delete Sucessfull") }
     );
 });
 
@@ -286,7 +286,7 @@ app.get("/route/:routeId", (req, res) => {
     gtfs.getRoutes({
         route_id: req.params.routeId
     }).then(routes => {
-        if(routes.length == 0) {
+        if (routes.length == 0) {
             return res.status(404).send({});
         }
         return res.json(routes[0]);
@@ -295,42 +295,38 @@ app.get("/route/:routeId", (req, res) => {
     });
 });
 
-function randomIntFromInterval(min, max) {  
-    return Math.floor(Math.random() * (max - min + 1) + min);
-}
-
 function normalizeDate(date, hourRange) {
-    date = date == undefined ? new Date(): date;
-    hourRange = hourRange == undefined? 1: hourRange;
+    date = date == undefined ? new Date() : date;
+    hourRange = hourRange == undefined ? 6 : hourRange;
     date.setFullYear(1970);
     date.setMonth(0);
     date.setDate(1);
     let dateRange = new Date(date.getTime());
-    dateRange.setTime(date.getTime() + (hourRange*60*60*1000));
-    if(date.getTime() <= dateRange.getTime()) {
+    dateRange.setTime(date.getTime() + (hourRange * 60 * 60 * 1000));
+    if (date.getTime() <= dateRange.getTime()) {
         return [date, dateRange];
     } else {
         return [dateRange, date];
     }
-} 
+}
 
 app.get("/route/:fromStopId/:toStopId", (req, res) => {
     let formatedPath = [];
     let fareTotal = 0.0;
-    if(req.query.departureTime != undefined && req.query.arrivalTime != undefined){
-        return res.status(400).send({ 
-            error: 'Provide departure time xor arrival time!' 
+    if (req.query.departureTime != undefined && req.query.arrivalTime != undefined) {
+        return res.status(400).send({
+            error: 'Provide departure time xor arrival time!'
         });
     }
 
-    if(req.query.timeVariance != undefined && (req.query.timeVariance > 5 || req.query.timeVariance < -5)){
-        return res.status(400).send({ 
-            error: 'Time variance should be no bigger than 5 hours and no less than minus 5 hours' 
+    if (req.query.timeVariance != undefined && (req.query.timeVariance > 5 || req.query.timeVariance < -5)) {
+        return res.status(400).send({
+            error: 'Time variance should be no bigger than 5 hours and no less than minus 5 hours'
         });
     }
 
     let timeRange;
-    if(req.query.arrivalTime != undefined) {
+    if (req.query.arrivalTime != undefined) {
         timeRange = normalizeDate(req.query.arrivalTime, req.query.timeVariance);
     } else {
         timeRange = normalizeDate(req.query.departureTime, req.query.timeVariance);
@@ -341,22 +337,22 @@ app.get("/route/:fromStopId/:toStopId", (req, res) => {
     try {
         let pathPiece = [];
         let foundPath = pathFinder.find(
-            req.params.fromStopId, 
+            req.params.fromStopId,
             req.params.toStopId
         );
-        
-        foundPath = foundPath.reverse()
-        for (let i=0; i<foundPath.length; i++) {
-            if(i<foundPath.length-1) {
-                let nextStop = foundPath[i+1];
+
+        foundPath = JSON.parse(JSON.stringify(foundPath.reverse()));
+        for (let i = 0; i < foundPath.length; i++) {
+            if (i < foundPath.length - 1) {
+                let nextStop = foundPath[i + 1];
                 for (let link of foundPath[i].links) {
-                    if(link.toId == nextStop.id){
+                    if (link.toId == nextStop.id) {
                         foundPath[i]["link"] = link;
                         break;
                     }
                 }
             }
-            //delete foundPath[i]["links"];
+            delete foundPath[i]["links"];
             if (foundPath[i].link == undefined || foundPath[i].link.data.weight > 1) {
                 pathPiece.push(foundPath[i]);
                 let fare = 3; //randomIntFromInterval(1,8);
@@ -375,76 +371,32 @@ app.get("/route/:fromStopId/:toStopId", (req, res) => {
                 pathPiece.push(foundPath[i]);
             }
         }
-    } catch(ex) {
-        return res.status(400).send({ 
-            error: 'Incorrect fromStopId or toStopId provided!' 
+    } catch (ex) {
+        return res.status(400).send({
+            error: 'Incorrect fromStopId or toStopId provided!'
         });
     }
 
-    let proms = [];
-    for(let pathPiece of formatedPath) {
-        let stops = [];
-        for(let stop of pathPiece.path) {
-            stops.push(stop.id);
-        }
-        proms.push(StopTimes.aggregate([
-            {
-                $match:
-                    {
-                        'stop_id': stops[0],
-                    }
-            },
-            {
-                $addFields: {
-                    convertedDate: {
-                        $toDate: {            
-                            $convert: { 
-                                input: {
-                                    $multiply: [
-                                        "$arrival_timestamp",
-                                        1000
-                                    ]
-                                }, 
-                                to: "long"
-                            } 
-                        }
-                    }
-                }
-            },
-            {
-                $match:
-                    {
-                        'convertedDate': {$gte: timeRange[0], $lte: timeRange[1]},
-                    }
-            },
-            {
-                $sort: { "convertedDate": 1 }
-            }
-        ]).allowDiskUse(true).then((res)=> {
-            return nextStoptimeSequenceMatch(res, stops, req.query.arrivalTime != undefined);
-        }));
-    }
-
-    return Promise.all(proms).then(
+    return stopTimeSequences(formatedPath, timeRange, req.query.arrivalTime != undefined, []).then(
         (stoptimeSequences) => {
-            for(let i=0; i<formatedPath.length; i++) {
+            for (let i = 0; i < formatedPath.length; i++) {
                 let stoptimeSequence = stoptimeSequences[i];
                 let pathPiece = formatedPath[i];
-                if(stoptimeSequence!=null){
-                    for(let j=0; j<pathPiece.path.length; j++){
-                        if(j==0){
+                if (stoptimeSequence != null) {
+                    for (let j = 0; j < pathPiece.path.length; j++) {
+                        if (j == 0) {
                             formatedPath[i]["trip_id"] = stoptimeSequence[j].trip_id;
                             formatedPath[i]["departure_time"] = stoptimeSequence[j].departure_time;
-                            if(i==0){
+                            if (i == 0) {
                                 finalDepartureTime = stoptimeSequence[j].departure_time;
                             }
-                        } else if (j==pathPiece.path.length-1) {
+                        } else if (j == pathPiece.path.length - 1) {
                             formatedPath[i]["arrival_time"] = stoptimeSequence[j].arrival_time;
-                            if(i==formatedPath.length-1){
+                            if (i == formatedPath.length - 1) {
                                 finalArrivalTime = stoptimeSequence[j].arrival_time;
                             }
                         }
-                        formatedPath[i].path[j]["stoptime"] = stoptimeSequences[i][j]; 
+                        formatedPath[i].path[j]["stoptime"] = stoptimeSequences[i][j];
                     }
                 }
             }
@@ -456,31 +408,94 @@ app.get("/route/:fromStopId/:toStopId", (req, res) => {
                     departureTime: finalDepartureTime,
                     arrivalTime: finalArrivalTime,
                     fareTotal: fareTotal,
-                    found: formatedPath.length>0 ? true: false,
+                    found: formatedPath.length > 0 ? true : false,
                 }
             )
         }
     );
 });
 
+function stopTimeSequences(formatedPath, timeRange, reverse, resSoFar) {
+    if (formatedPath.length == 0) {
+        return resSoFar;
+    } else {
+        let stops = [];
+        let pathPiece = formatedPath[0];
+        for (let stop of pathPiece.path) {
+            stops.push(stop.id);
+        }
+        return StopTimes.aggregate([
+            {
+                $match:
+                {
+                    'stop_id': stops[0],
+                }
+            },
+            {
+                $addFields: {
+                    convertedDate: {
+                        $toDate: {
+                            $convert: {
+                                input: {
+                                    $multiply: [
+                                        "$arrival_timestamp",
+                                        1000
+                                    ]
+                                },
+                                to: "long"
+                            }
+                        }
+                    }
+                }
+            },
+            {
+                $match:
+                {
+                    'convertedDate': { $gte: timeRange[0], $lte: timeRange[1] },
+                }
+            },
+            {
+                $sort: { "convertedDate": 1 }
+            }
+        ]).allowDiskUse(true).then((res) => {
+            let slicedFormatedPath = formatedPath.slice(
+                1, 
+                formatedPath.length
+            );
+            return nextStoptimeSequenceMatch(res, stops, reverse).then((stoptimesSequence) => {
+                resSoFar.push(stoptimesSequence);
+                return stopTimeSequences(
+                    slicedFormatedPath,
+                    timeRange,
+                    reverse,
+                    resSoFar
+                );
+            });
+        });
+    }
+}
+
 async function nextStoptimeSequenceMatch(res, stops, reverse) {
     let promises = [];
 
-    for(let stoptime of res) {
+    for (let stoptime of res) {
         let trip = stoptime.trip_id;
         let stopSequence = stoptime.stop_sequence;
-        let stopSequenceQuery = reverse ? {$lte: stopSequence} : {$gte: stopSequence};
-        stops = reverse ? stops.reverse() : stops; 
-        
+        let stopSequenceQuery = reverse ? { $lte: stopSequence } : { $gte: stopSequence };
+        stops = reverse ? stops.reverse() : stops;
+
         promises.push(
             StopTimes.find(
-                {"trip_id": trip, "stop_sequence": stopSequenceQuery},
+                { "trip_id": trip, "stop_sequence": stopSequenceQuery },
                 null,
-                {sort: {stop_sequence: reverse ? -1: 1}}
+                { sort: { stop_sequence: reverse ? -1 : 1 } }
             ).then((stoptimesSequence) => {
+                if(stoptimesSequence.length<stops.length) {
+                    return null;
+                }
                 let i;
-                for(i=0; i<stops.length; i++){
-                    if(stops[i]!=stoptimesSequence[i]._doc.stop_id){
+                for (i = 0; i < stops.length; i++) {
+                    if (stops[i] != stoptimesSequence[i]._doc.stop_id) {
                         // not a match!!!
                         return null;
                     }
@@ -490,10 +505,10 @@ async function nextStoptimeSequenceMatch(res, stops, reverse) {
             })
         );
     }
-    
+
     return Promise.all(promises).then((stoptimesSequences) => {
         for (let stoptimesSequence of stoptimesSequences) {
-            if(stoptimesSequence != null) {
+            if (stoptimesSequence != null) {
                 return stoptimesSequence;
             }
         }
@@ -503,13 +518,13 @@ async function nextStoptimeSequenceMatch(res, stops, reverse) {
 
 app.get("/agency", (req, res) => {
     let query = getQuery(req);
-    if(query == null) {
-        return res.status(400).send({ 
-            error: 'Both latitude and longitude must be provided!' 
+    if (query == null) {
+        return res.status(400).send({
+            error: 'Both latitude and longitude must be provided!'
         });
-    }   
+    }
     gtfs.getAgencies(query).then(agencies => {
-        if(agencies.length == 0) {
+        if (agencies.length == 0) {
             return res.status(404).send([]);
         }
         return res.json(agencies);
@@ -522,7 +537,7 @@ app.get("/agency/:agencyKey", (req, res) => {
     gtfs.getAgencies({
         agency_key: req.params.agencyKey
     }).then(agencies => {
-        if(agencies.length == 0) {
+        if (agencies.length == 0) {
             return res.status(404).send({});
         }
         return res.json(agencies[0]);
@@ -533,13 +548,13 @@ app.get("/agency/:agencyKey", (req, res) => {
 
 app.get("/stop", (req, res) => {
     let query = getQuery(req);
-    if(query == null) {
-        return res.status(400).send({ 
-            error: 'Both latitude and longitude must be provided!' 
+    if (query == null) {
+        return res.status(400).send({
+            error: 'Both latitude and longitude must be provided!'
         });
     }
     gtfs.getStops(query).then(stops => {
-        if(stops.length == 0) {
+        if (stops.length == 0) {
             return res.status(404).send([]);
         }
         return res.json(stops);
@@ -552,7 +567,7 @@ app.get("/stop/:stopId", (req, res) => {
     gtfs.getStops({
         stop_id: req.params.stopId
     }).then(stops => {
-        if(stops.length == 0) {
+        if (stops.length == 0) {
             return res.status(404).send({});
         }
         return res.json(stops[0]);
@@ -575,7 +590,7 @@ app.get("/stoptimes/:stopId", (req, res) => {
 function getQuery(req) {
     let lat = req.query.lat;
     let lon = req.query.long;
-    if((lat !== undefined && lon === undefined) || (lat === undefined && lon !== undefined)){
+    if ((lat !== undefined && lon === undefined) || (lat === undefined && lon !== undefined)) {
         return null;
     }
     let query = {};
@@ -585,39 +600,39 @@ function getQuery(req) {
                 lat: lat,
                 lon: lon,
                 radius: 5
-            } 
+            }
         };
     }
     return query;
 }
 
 function distance(lat1, lon1, lat2, lon2, unit) {
-	if ((lat1 == lat2) && (lon1 == lon2)) {
-		return 0;
-	} else {
-		var radlat1 = Math.PI * lat1/180;
-		var radlat2 = Math.PI * lat2/180;
-		var theta = lon1-lon2;
-		var radtheta = Math.PI * theta/180;
-		var dist = Math.sin(radlat1) * Math.sin(radlat2) + Math.cos(radlat1) * Math.cos(radlat2) * Math.cos(radtheta);
-		if (dist > 1) {
-			dist = 1;
-		}
-		dist = Math.acos(dist);
-		dist = dist * 180/Math.PI;
-		dist = dist * 60 * 1.1515;
-		if (unit=="K") { dist = dist * 1.609344 }
-		if (unit=="N") { dist = dist * 0.8684 }
-		return dist;
-	}
+    if ((lat1 == lat2) && (lon1 == lon2)) {
+        return 0;
+    } else {
+        var radlat1 = Math.PI * lat1 / 180;
+        var radlat2 = Math.PI * lat2 / 180;
+        var theta = lon1 - lon2;
+        var radtheta = Math.PI * theta / 180;
+        var dist = Math.sin(radlat1) * Math.sin(radlat2) + Math.cos(radlat1) * Math.cos(radlat2) * Math.cos(radtheta);
+        if (dist > 1) {
+            dist = 1;
+        }
+        dist = Math.acos(dist);
+        dist = dist * 180 / Math.PI;
+        dist = dist * 60 * 1.1515;
+        if (unit == "K") { dist = dist * 1.609344 }
+        if (unit == "N") { dist = dist * 0.8684 }
+        return dist;
+    }
 }
 
 app.listen(port, (req, res) => {
     gtfs.getStops().then((stops) => {
         let promises = [];
-        for(let stop of stops) {
-            if(stopsGraph.getNode(stop.stop_id)==undefined) {
-                stopsGraph.addNode(stop.stop_id, {lat: stop.stop_lat, lon: stop.stop_lon});
+        for (let stop of stops) {
+            if (stopsGraph.getNode(stop.stop_id) == undefined) {
+                stopsGraph.addNode(stop.stop_id, { lat: stop.stop_lat, lon: stop.stop_lon });
             }
             promises.push(
                 gtfs.getStops({
@@ -627,15 +642,15 @@ app.listen(port, (req, res) => {
                         radius: 0.1
                     }
                 }).then((nearStops) => {
-                    for(let nearStop of nearStops) {
-                        if(nearStop.stop_id == stop.stop_id) {
+                    for (let nearStop of nearStops) {
+                        if (nearStop.stop_id == stop.stop_id) {
                             continue;
                         }
-                        if(stopsGraph.getNode(nearStop.stop_id)==undefined) {
-                            stopsGraph.addNode(nearStop.stop_id, {lat: nearStop.stop_lat, lon: nearStop.stop_lon});
+                        if (stopsGraph.getNode(nearStop.stop_id) == undefined) {
+                            stopsGraph.addNode(nearStop.stop_id, { lat: nearStop.stop_lat, lon: nearStop.stop_lon });
                         }
-                        if(stopsGraph.getLink(stop.stop_id, nearStop.stop_id)==null){
-                            stopsGraph.addLink(stop.stop_id, nearStop.stop_id, {weight: 5});
+                        if (stopsGraph.getLink(stop.stop_id, nearStop.stop_id) == null) {
+                            stopsGraph.addLink(stop.stop_id, nearStop.stop_id, { weight: 5 });
                         }
                     }
                 }).catch((err) => {
@@ -648,10 +663,10 @@ app.listen(port, (req, res) => {
     }).then((stops) => {
         return StopTimes.aggregate([
             {
-                $sort : { 
-                    'stop_sequence': 1 
+                $sort: {
+                    'stop_sequence': 1
                 }
-            }, 
+            },
             {
                 $group: {
                     _id: "$trip_id",
@@ -660,16 +675,16 @@ app.listen(port, (req, res) => {
                     }
                 }
             }
-        ]).allowDiskUse(true).exec((err ,res)=> {
-            for(let tripStoptimes of res) {
+        ]).allowDiskUse(true).exec((err, res) => {
+            for (let tripStoptimes of res) {
                 let previousStoptime = null;
-                for(let stoptime of tripStoptimes.records) {
-                    if(previousStoptime!=null && stopsGraph.getLink(previousStoptime.stop_id, stoptime.stop_id)==null){
+                for (let stoptime of tripStoptimes.records) {
+                    if (previousStoptime != null && stopsGraph.getLink(previousStoptime.stop_id, stoptime.stop_id) == null) {
                         stopsGraph.addLink(
-                            previousStoptime.stop_id, 
-                            stoptime.stop_id, 
+                            previousStoptime.stop_id,
+                            stoptime.stop_id,
                             {
-                                weight: 1, 
+                                weight: 1,
                                 tripId: stoptime.trip_id,
                             }
                         );
