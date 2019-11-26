@@ -296,8 +296,8 @@ app.get("/route/:routeId", (req, res) => {
 });
 
 function normalizeDate(date, hourRange) {
-    date = date == undefined ? new Date() : date;
-    hourRange = hourRange == undefined ? 6 : hourRange;
+    date = date == undefined ? new Date() : new Date(date);
+    hourRange = hourRange == undefined ? 10 : hourRange;
     date.setFullYear(1970);
     date.setMonth(0);
     date.setDate(1);
@@ -319,9 +319,21 @@ app.get("/route/:fromStopId/:toStopId", (req, res) => {
         });
     }
 
-    if (req.query.timeVariance != undefined && (req.query.timeVariance > 5 || req.query.timeVariance < -5)) {
+    if (req.query.departureTime != undefined && Date.parse(req.query.departureTime) == NaN) {
         return res.status(400).send({
-            error: 'Time variance should be no bigger than 5 hours and no less than minus 5 hours'
+            error: 'departureTime must be in iso date string format!'
+        });
+    }
+
+    if (req.query.arrivalTime != undefined && Date.parse(req.query.arrivalTime) == NaN) {
+        return res.status(400).send({
+            error: 'arrivalTime must be in iso date string format!'
+        });
+    }
+
+    if (req.query.timeVariance != undefined && (!Number.isInteger(req.query.timeVariance) || req.query.timeVariance > 10 || req.query.timeVariance < -10)) {
+        return res.status(400).send({
+            error: 'Time variance should be no bigger than 10 hours and no less than minus 10 hours'
         });
     }
 
@@ -464,6 +476,7 @@ function stopTimeSequences(formatedPath, timeRange, reverse, resSoFar) {
             );
             return nextStoptimeSequenceMatch(res, stops, reverse).then((stoptimesSequence) => {
                 resSoFar.push(stoptimesSequence);
+                //timeRange=normalizeDate(stoptimeSequence.arrival_time, variance)
                 return stopTimeSequences(
                     slicedFormatedPath,
                     timeRange,
