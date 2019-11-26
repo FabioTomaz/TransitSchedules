@@ -344,6 +344,8 @@ app.get("/route/:fromStopId/:toStopId", (req, res) => {
         timeRange = normalizeDate(req.query.departureTime, req.query.timeVariance);
     }
 
+    let variance = req.query.timeVariance == undefined ? 10 : req.query.timeVariance;
+
     let finalDepartureTime = 0.0;
     let finalArrivalTime = 0.0;
     try {
@@ -389,7 +391,7 @@ app.get("/route/:fromStopId/:toStopId", (req, res) => {
         });
     }
 
-    return stopTimeSequences(formatedPath, timeRange, req.query.arrivalTime != undefined, []).then(
+    return stopTimeSequences(formatedPath, timeRange, variance, req.query.arrivalTime != undefined, []).then(
         (stoptimeSequences) => {
             for (let i = 0; i < formatedPath.length; i++) {
                 let stoptimeSequence = stoptimeSequences[i];
@@ -427,7 +429,7 @@ app.get("/route/:fromStopId/:toStopId", (req, res) => {
     );
 });
 
-function stopTimeSequences(formatedPath, timeRange, reverse, resSoFar) {
+function stopTimeSequences(formatedPath, timeRange, variance, reverse, resSoFar) {
     if (formatedPath.length == 0) {
         return resSoFar;
     } else {
@@ -476,10 +478,14 @@ function stopTimeSequences(formatedPath, timeRange, reverse, resSoFar) {
             );
             return nextStoptimeSequenceMatch(res, stops, reverse).then((stoptimesSequence) => {
                 resSoFar.push(stoptimesSequence);
-                //timeRange=normalizeDate(stoptimeSequence.arrival_time, variance)
+                timeRange=normalizeDate(
+                    new Date(stoptimesSequence[stoptimesSequence.length-1].arrival_timestamp*1000),
+                    variance
+                );
                 return stopTimeSequences(
                     slicedFormatedPath,
                     timeRange,
+                    variance,
                     reverse,
                     resSoFar
                 );
