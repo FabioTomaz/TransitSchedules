@@ -596,13 +596,23 @@ app.get("/stop/:stopId", (req, res) => {
 });
 
 app.get("/stoptimes/:stopId", (req, res) => {
-    // Get all stoptimes for a specific stop
-    gtfs.getStoptimes({
-        agency_key: 'localAgency',
+    return gtfs.getStops({
         stop_id: req.params.stopId
-    }).then(stoptimes => {
-        console.log(stoptimes);
-        return res.json(stoptimes);
+    }).then((stop) => {
+        // Get all stoptimes for a specific stop
+        return gtfs.getStoptimes(
+            {
+                agency_key: stop[0].agency_key,
+                stop_id: req.params.stopId
+            }, 
+            {}, 
+            {
+                sort: {departure_timestamp: 1}
+            }
+        ).then(stoptimes => {
+            console.log(stoptimes);
+            return res.json(stoptimes);
+        });
     });
 });
 
