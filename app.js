@@ -297,12 +297,13 @@ app.get("/route/:routeId", (req, res) => {
 
 function normalizeDate(date, hourRange) {
     date = date == undefined ? new Date() : new Date(date);
-    hourRange = hourRange == undefined ? 10 : hourRange;
+    hourRange = hourRange == undefined ? 10 : Number(hourRange);
     date.setFullYear(1970);
     date.setMonth(0);
     date.setDate(1);
     let dateRange = new Date(date.getTime());
     dateRange.setTime(date.getTime() + (hourRange * 60 * 60 * 1000));
+    dateRange.setDate(1);
     if (date.getTime() <= dateRange.getTime()) {
         return [date, dateRange];
     } else {
@@ -344,7 +345,7 @@ app.get("/route/:fromStopId/:toStopId", (req, res) => {
         timeRange = normalizeDate(req.query.departureTime, req.query.timeVariance);
     }
 
-    let variance = req.query.timeVariance == undefined ? 10 : req.query.timeVariance;
+    let variance = req.query.timeVariance == undefined ? 10 : Number(req.query.timeVariance);
 
     let finalDepartureTime = 0.0;
     let finalArrivalTime = 0.0;
@@ -431,7 +432,7 @@ app.get("/route/:fromStopId/:toStopId", (req, res) => {
 
 function stopTimeSequences(formatedPath, timeRange, variance, reverse, resSoFar) {
     if (formatedPath.length == 0) {
-        return resSoFar;
+        return Promise.resolve(resSoFar);
     } else {
         let stops = [];
         let pathPiece = formatedPath[0];
