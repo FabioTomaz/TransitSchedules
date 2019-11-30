@@ -331,7 +331,7 @@ app.get("/route/:fromStopId/:toStopId", (req, res) => {
         });
     }
 
-    if (req.query.timeVariance != undefined && (!Number.isInteger(req.query.timeVariance) || req.query.timeVariance > 10 || req.query.timeVariance < -10)) {
+    if (req.query.timeVariance != undefined && (isNaN(req.query.timeVariance) || req.query.timeVariance > 10 || req.query.timeVariance < -10)) {
         return res.status(400).send({
             error: 'Time variance should be no bigger than 10 hours and no less than minus 10 hours'
         });
