@@ -282,6 +282,29 @@ app.delete('/gtfs/:agencyKey', (req, res) => {
     );
 });
 
+
+app.get("/trip/:tripId/geojson", (req, res) => {
+    return gtfs.getTrips({
+        trip_id: req.params.tripId
+    }).then((trips) => {
+        if(trips.length > 0) {
+            gtfs.getStopsAsGeoJSON({
+                agency_key: trips[0].agency_key,
+                trip_id: trips[0].trip_id
+            }).then(geoJson => {
+                if (geoJson == null) {
+                    return res.status(404).send({error: "geoJSON for trip not found"});
+                }
+                return res.json(geoJson);
+            });
+        } else {
+            return res.status(404).send({error: "Trip not found"});
+        }
+    }).catch(err => {
+        return res.json(err);
+    });
+});
+
 app.get("/route/:routeId", (req, res) => {
     gtfs.getRoutes({
         route_id: req.params.routeId
@@ -294,6 +317,7 @@ app.get("/route/:routeId", (req, res) => {
         return res.json(err);
     });
 });
+
 
 function normalizeDate(date, hourRange) {
     date = date == undefined ? new Date() : new Date(date);
