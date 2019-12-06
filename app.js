@@ -288,7 +288,7 @@ app.get("/trip/:tripId/geojson", (req, res) => {
         trip_id: req.params.tripId
     }).then((trips) => {
         if(trips.length > 0) {
-            gtfs.getStopsAsGeoJSON({
+            gtfs.getShapesAsGeoJSON({
                 agency_key: trips[0].agency_key,
                 trip_id: trips[0].trip_id
             }).then(geoJson => {
